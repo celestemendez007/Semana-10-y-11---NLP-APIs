@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables (NEVER commit the token)
+.env
+*.env
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Model weights (son demasiado grandes para GitHub, usa HuggingFace Hub si los subes)
+*.safetensors
+*.bin
+*.pt
+*.ckpt
+# Pero SÍ queremos config.json y tokenizer del modelo:
+!modernbert-base-squad2-final/config.json
+!modernbert-base-squad2-final/tokenizer*.json
+!modernbert-base-squad2-final/tokenizer_config.json
+!modernbert-base-squad2-final/special_tokens_map.json
+!modernbert-base-squad2-final/trainer_state.json
+!modernbert-base-squad2-final/train_results.json
+!modernbert-base-squad2-final/eval_results.json
+
+# Logs (EXCEPTO los que son evidencia obligatoria)
+*.log
+!logs/loss.png
+!logs/train_results.json
+!logs/eval_results.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
