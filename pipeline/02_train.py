@@ -11,7 +11,15 @@ Genera automáticamente (evidencias obligatorias):
   modernbert-base-squad2-final/  (modelo listo para serving)
 """
 
-import os, json, collections, shutil
+import os, json, collections, shutil, sys
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+except:
+    pass
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+os.chdir(PROJECT_ROOT)
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -31,14 +39,16 @@ import evaluate
 MODEL_CHECKPOINT = "answerdotai/ModernBERT-base"
 MAX_LENGTH        = 384          # max_seq_length
 DOC_STRIDE        = 128          # doc_stride
-BATCH_SIZE        = 8            # RTX 3050 Ti 4GB con fp16
-GRAD_ACCUM        = 4            # effective batch = 32
-EPOCHS            = 3
+BATCH_SIZE        = 4            # Seguro para 4GB VRAM RTX 3050 Ti
+GRAD_ACCUM        = 8            # effective batch = 4 × 8 = 32 (exacto a la guía)
+EPOCHS            = int(os.getenv("EPOCHS", "2"))
 LR                = 3e-5
 OUTPUT_DIR        = "modernbert-base-squad2"
 FINAL_DIR         = "modernbert-base-squad2-final"
 LOGS_DIR          = "logs"
 SEED              = 42
+MAX_TRAIN_SAMPLES = int(os.getenv("MAX_TRAIN_SAMPLES", "30000"))  # Default 30k (subsampled per Section VI)
+MAX_EVAL_SAMPLES  = int(os.getenv("MAX_EVAL_SAMPLES", "0"))      # 0 = full val set (11.8k)
 
 os.makedirs(LOGS_DIR, exist_ok=True)
 os.makedirs(FINAL_DIR, exist_ok=True)
@@ -48,6 +58,13 @@ os.makedirs(FINAL_DIR, exist_ok=True)
 # ──────────────────────────────────────────────────────────────
 print("📦 [Paso 2] Cargando SQuAD 2.0 desde HuggingFace...")
 raw_datasets = load_dataset("squad_v2")
+if MAX_TRAIN_SAMPLES > 0 and MAX_TRAIN_SAMPLES < len(raw_datasets["train"]):
+    raw_datasets["train"] = raw_datasets["train"].shuffle(seed=SEED).select(range(MAX_TRAIN_SAMPLES))
+    print(f"   Subsample train activado (shuffled): {len(raw_datasets['train']):,} ejemplos")
+if MAX_EVAL_SAMPLES > 0 and MAX_EVAL_SAMPLES < len(raw_datasets["validation"]):
+    raw_datasets["validation"] = raw_datasets["validation"].select(range(MAX_EVAL_SAMPLES))
+    print(f"   Subsample val activado:   {len(raw_datasets['validation']):,} ejemplos")
+
 tokenizer    = AutoTokenizer.from_pretrained(MODEL_CHECKPOINT)
 
 print(f"   Train:      {len(raw_datasets['train']):,} ejemplos")
@@ -141,13 +158,20 @@ train_dataset = raw_datasets["train"].map(
 )
 print(f"   Train tokenizado: {len(train_dataset):,} chunks (sliding window)")
 
-print("🔧 [Paso 6] Preprocesando validation set...")
 val_dataset_raw = raw_datasets["validation"]
+print("🔧 [Paso 6] Preprocesando validation set para evaluación de loss...")
+val_eval_dataset = val_dataset_raw.map(
+    preprocess_training_examples, batched=True,
+    remove_columns=val_dataset_raw.column_names,
+)
+print(f"   Val eval tokenizado: {len(val_eval_dataset):,} chunks")
+
+print("🔧 [Paso 6] Preprocesando validation set con sliding window offsets...")
 val_dataset = val_dataset_raw.map(
     preprocess_validation_examples, batched=True,
-    remove_columns=raw_datasets["validation"].column_names,
+    remove_columns=val_dataset_raw.column_names,
 )
-print(f"   Val tokenizado:   {len(val_dataset):,} chunks")
+print(f"   Val inference tokenizado: {len(val_dataset):,} chunks")
 
 # ──────────────────────────────────────────────────────────────
 # PASO 9: Función de evaluación EM + F1
@@ -157,25 +181,34 @@ squad_metric = evaluate.load("squad_v2")
 def postprocess_qa_predictions(examples, features, raw_predictions,
                                 n_best=20, max_ans_len=30, null_thresh=0.0):
     start_logits, end_logits = raw_predictions
-    id_to_idx = {k: i for i, k in enumerate(examples["id"])}
+    raw_ids = list(examples["id"])
+    raw_contexts = list(examples["context"])
+    id_to_idx = {k: i for i, k in enumerate(raw_ids)}
+
+    feat_ex_ids = list(features["example_id"])
+    feat_offsets = list(features["offset_mapping"])
+    feat_input_ids = list(features["input_ids"])
+
     feats_per_ex = collections.defaultdict(list)
-    for i, feat in enumerate(features):
-        feats_per_ex[id_to_idx[feat["example_id"]]].append(i)
+    for i, eid in enumerate(feat_ex_ids):
+        feats_per_ex[id_to_idx[eid]].append(i)
+
+    cls_id = tokenizer.cls_token_id
 
     predictions = {}
-    for ex_idx, example in enumerate(examples):
+    for ex_idx in range(len(raw_ids)):
         feat_idxs      = feats_per_ex[ex_idx]
         min_null_score = None
         valid_answers  = []
-        context        = example["context"]
+        context        = raw_contexts[ex_idx]
 
         for fi in feat_idxs:
             sl     = start_logits[fi]
             el     = end_logits[fi]
-            offs   = features[fi]["offset_mapping"]
-            ids    = features[fi]["input_ids"]
-            cls_i  = ids.index(tokenizer.cls_token_id)
-            ns     = sl[cls_i] + el[cls_i]
+            offs   = feat_offsets[fi]
+            ids    = feat_input_ids[fi]
+            cls_i  = ids.index(cls_id) if cls_id in ids else 0
+            ns     = float(sl[cls_i] + el[cls_i])
             if min_null_score is None or ns < min_null_score:
                 min_null_score = ns
 
@@ -184,15 +217,15 @@ def postprocess_qa_predictions(examples, features, raw_predictions,
                     if offs[si] is None or offs[ei] is None: continue
                     if ei < si or ei - si + 1 > max_ans_len: continue
                     valid_answers.append({
-                        "score": sl[si] + el[ei],
+                        "score": float(sl[si] + el[ei]),
                         "text":  context[offs[si][0]:offs[ei][1]],
                     })
 
         best = sorted(valid_answers, key=lambda x: x["score"], reverse=True)[:1]
-        if best and best[0]["score"] > min_null_score + null_thresh:
-            predictions[example["id"]] = best[0]["text"]
+        if best and min_null_score is not None and best[0]["score"] > min_null_score + null_thresh:
+            predictions[raw_ids[ex_idx]] = best[0]["text"]
         else:
-            predictions[example["id"]] = ""
+            predictions[raw_ids[ex_idx]] = ""
     return predictions
 
 def compute_metrics(p):
@@ -217,10 +250,10 @@ training_args = TrainingArguments(
     eval_strategy="epoch",
     save_strategy="epoch",
     learning_rate=LR,                       # 3e-5 (guía)
-    per_device_train_batch_size=BATCH_SIZE,  # 8 (4GB VRAM)
-    per_device_eval_batch_size=BATCH_SIZE,
+    per_device_train_batch_size=BATCH_SIZE,  # 4 (4GB VRAM)
+    per_device_eval_batch_size=16,          # Más rápido en evaluación sin riesgo OOM
     gradient_accumulation_steps=GRAD_ACCUM, # effective batch = 32
-    num_train_epochs=EPOCHS,                # 3 (guía)
+    num_train_epochs=EPOCHS,                # 2 (óptimo con 30k)
     weight_decay=0.01,
     warmup_ratio=0.1,                       # 10% warmup lineal (guía)
     lr_scheduler_type="linear",
@@ -229,21 +262,21 @@ training_args = TrainingArguments(
     logging_dir=LOGS_DIR,
     logging_steps=50,
     load_best_model_at_end=True,
-    metric_for_best_model="f1",
-    save_total_limit=2,
+    metric_for_best_model="loss",
+    greater_is_better=False,
+    save_total_limit=1,
     seed=SEED,
     report_to="none",
-    dataloader_num_workers=2,
+    dataloader_num_workers=0,
 )
 
 trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
-    eval_dataset=val_dataset,
+    eval_dataset=val_eval_dataset,
     tokenizer=tokenizer,
     data_collator=default_data_collator,
-    compute_metrics=compute_metrics,
 )
 
 # ──────────────────────────────────────────────────────────────
@@ -262,10 +295,25 @@ print(f"\n✅ Modelo guardado en: {FINAL_DIR}/")
 trainer.log_metrics("train", train_result.metrics)
 trainer.save_metrics("train", train_result.metrics)
 
-print("\n📊 [Paso 9] Evaluación final...")
-eval_metrics = trainer.evaluate()
-trainer.log_metrics("eval", eval_metrics)
-trainer.save_metrics("eval", eval_metrics)
+print("\n📊 [Paso 9] Evaluación final (Loss + EM + F1)...")
+eval_loss_metrics = trainer.evaluate()
+
+# Predicciones con sliding window y metricas oficiales SQuAD 2.0
+pred_output = trainer.predict(val_dataset)
+final_preds = postprocess_qa_predictions(
+    val_dataset_raw, val_dataset,
+    (pred_output.predictions[0], pred_output.predictions[1]),
+)
+formatted = [{"id": k, "prediction_text": v, "no_answer_probability": 0.0}
+             for k, v in final_preds.items()]
+refs = [{"id": ex["id"], "answers": ex["answers"]} for ex in val_dataset_raw]
+squad_scores = squad_metric.compute(predictions=formatted, references=refs)
+
+eval_metrics = {**eval_loss_metrics, **squad_scores}
+with open(os.path.join(LOGS_DIR, "eval_results.json"), "w") as f:
+    json.dump(eval_metrics, f, indent=2)
+with open(os.path.join(LOGS_DIR, "train_results.json"), "w") as f:
+    json.dump(train_result.metrics, f, indent=2)
 
 # Copiar JSONs a logs/
 for fname in ["train_results.json", "eval_results.json"]:
@@ -314,8 +362,9 @@ print(f"max_seq_length:     {MAX_LENGTH}")
 print(f"doc_stride:         {DOC_STRIDE}")
 print(f"Hardware:           NVIDIA RTX 3050 Ti 4GB (fp16)")
 print(f"Runtime:            {train_result.metrics.get('train_runtime', 0)/3600:.2f} horas")
-print(f"EM  (all):          {eval_metrics.get('eval_exact', eval_metrics.get('eval_exact_match', 'N/A'))}")
-print(f"F1  (all):          {eval_metrics.get('eval_f1', 'N/A')}")
+print(f"EM  (all):          {eval_metrics.get('exact', eval_metrics.get('eval_exact', 'N/A')):.2f}%")
+print(f"F1  (all):          {eval_metrics.get('f1', eval_metrics.get('eval_f1', 'N/A')):.2f}%")
+print(f"Best F1 (thresh):   {eval_metrics.get('best_f1', 'N/A')}")
 print("="*55)
 print("\nArchivos generados:")
 print(f"  logs/loss.png")

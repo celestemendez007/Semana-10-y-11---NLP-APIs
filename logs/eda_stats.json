@@ -1,0 +1,10 @@
+{
+  "train_total": 130319,
+  "val_total": 11873,
+  "train_unanswerable": 43498,
+  "val_unanswerable": 5945,
+  "context_len_mean": 754.5662873410631,
+  "context_len_max": 3706,
+  "answer_len_mean": 20.149168979855105,
+  "answer_len_max": 239
+}

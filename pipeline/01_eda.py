@@ -5,7 +5,15 @@ Paso 4: Exploratory Data Analysis — SQuAD 2.0
 Genera estadísticas y guarda graficas en logs/eda_*.png
 """
 
-import os, json
+import os, json, sys
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+except:
+    pass
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+os.chdir(PROJECT_ROOT)
 import numpy as np
 import matplotlib.pyplot as plt
 from datasets import load_dataset

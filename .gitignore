@@ -25,6 +25,7 @@ ENV/
 *.ipynb
 
 # Model weights (son demasiado grandes para GitHub, usa HuggingFace Hub si los subes)
+modernbert-base-squad2/
 *.safetensors
 *.bin
 *.pt
@@ -43,6 +44,10 @@ ENV/
 !logs/loss.png
 !logs/train_results.json
 !logs/eval_results.json
+!logs/threshold_search.png
+!logs/error_analysis.json
+!logs/eda_squad2.png
+!logs/eda_stats.json
 
 # OS
 .DS_Store

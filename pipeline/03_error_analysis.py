@@ -9,7 +9,15 @@ Genera:
   logs/threshold_search.png  — curva F1 vs threshold (Paso 11)
 """
 
-import os, json, collections
+import os, json, collections, sys
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+except:
+    pass
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+os.chdir(PROJECT_ROOT)
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -27,8 +35,12 @@ N_BEST        = 20
 MAX_ANS_LEN   = 30
 
 print("Cargando modelo y dataset...")
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"Dispositivo de inferencia: {device}")
+
 tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
 model     = AutoModelForQuestionAnswering.from_pretrained(MODEL_DIR)
+model.to(device)
 model.eval()
 
 raw_datasets    = load_dataset("squad_v2")
@@ -61,7 +73,7 @@ val_dataset = val_dataset_raw.map(
     remove_columns=val_dataset_raw.column_names,
 )
 
-# Inferencia batch
+# Inferencia batch acelerada por GPU
 from torch.utils.data import DataLoader
 val_dataset.set_format("torch")
 loader = DataLoader(val_dataset.remove_columns(["example_id", "offset_mapping"]),
@@ -70,53 +82,72 @@ loader = DataLoader(val_dataset.remove_columns(["example_id", "offset_mapping"])
 all_start, all_end = [], []
 with torch.no_grad():
     for batch in loader:
-        out = model(**{k: v for k, v in batch.items()
-                       if k in ("input_ids", "attention_mask", "token_type_ids") and v is not None})
-        all_start.append(out.start_logits.numpy())
-        all_end.append(out.end_logits.numpy())
+        b = {k: v.to(device) for k, v in batch.items()
+             if k in ("input_ids", "attention_mask", "token_type_ids") and v is not None}
+        out = model(**b)
+        all_start.append(out.start_logits.cpu().numpy())
+        all_end.append(out.end_logits.cpu().numpy())
 
 all_start = np.concatenate(all_start)
 all_end   = np.concatenate(all_end)
 
+val_dataset.reset_format()
+
 squad_metric = evaluate.load("squad_v2")
 
-# ── Paso 11: Búsqueda del threshold óptimo ───────────────────
-print("\n🔍 [Paso 11] Buscando threshold óptimo...")
+# ── Paso 11: Búsqueda del threshold óptimo (Precalculado) ─────────
+print("\n[Paso 11] Buscando threshold optimo...")
+
+raw_ids = list(val_dataset_raw["id"])
+raw_contexts = list(val_dataset_raw["context"])
+id_to_idx = {k: i for i, k in enumerate(raw_ids)}
+
+feat_example_ids = list(val_dataset["example_id"])
+feat_offsets = list(val_dataset["offset_mapping"])
+feat_input_ids = list(val_dataset["input_ids"])
+
+feats_per_ex = collections.defaultdict(list)
+for i, eid in enumerate(feat_example_ids):
+    feats_per_ex[id_to_idx[eid]].append(i)
+
+cls_token_id = tokenizer.cls_token_id
+
+# Precomputar el mejor span y score nulo una sola vez
+precomputed = []
+for ex_idx in range(len(raw_ids)):
+    feat_idxs      = feats_per_ex[ex_idx]
+    min_null_score = None
+    valid_answers  = []
+    context        = raw_contexts[ex_idx]
+    for fi in feat_idxs:
+        sl, el = all_start[fi], all_end[fi]
+        offs   = feat_offsets[fi]
+        ids    = feat_input_ids[fi]
+        cls_i  = ids.index(cls_token_id) if cls_token_id in ids else 0
+        ns     = float(sl[cls_i] + el[cls_i])
+        if min_null_score is None or ns < min_null_score:
+            min_null_score = ns
+        for si in np.argsort(sl)[-N_BEST:].tolist():
+            for ei in np.argsort(el)[-N_BEST:].tolist():
+                if offs[si] is None or offs[ei] is None: continue
+                if ei < si or ei - si + 1 > MAX_ANS_LEN: continue
+                valid_answers.append({
+                    "score": float(sl[si] + el[ei]),
+                    "text":  context[offs[si][0]:offs[ei][1]],
+                })
+    best = sorted(valid_answers, key=lambda x: x["score"], reverse=True)[:1]
+    best_item = best[0] if best else {"score": -1e9, "text": ""}
+    precomputed.append((raw_ids[ex_idx], float(min_null_score if min_null_score is not None else 0.0), best_item["score"], best_item["text"]))
 
 def get_predictions(null_thresh):
-    id_to_idx = {k: i for i, k in enumerate(val_dataset_raw["id"])}
-    feats_per_ex = collections.defaultdict(list)
-    for i, feat in enumerate(val_dataset):
-        feats_per_ex[id_to_idx[feat["example_id"]]].append(i)
     predictions = {}
-    null_scores  = {}
-    for ex_idx, example in enumerate(val_dataset_raw):
-        feat_idxs      = feats_per_ex[ex_idx]
-        min_null_score = None
-        valid_answers  = []
-        context        = example["context"]
-        for fi in feat_idxs:
-            sl, el = all_start[fi], all_end[fi]
-            offs   = val_dataset[fi]["offset_mapping"]
-            ids    = val_dataset[fi]["input_ids"].tolist()
-            cls_i  = ids.index(tokenizer.cls_token_id)
-            ns     = sl[cls_i] + el[cls_i]
-            if min_null_score is None or ns < min_null_score:
-                min_null_score = ns
-            for si in np.argsort(sl)[-N_BEST:].tolist():
-                for ei in np.argsort(el)[-N_BEST:].tolist():
-                    if offs[si] is None or offs[ei] is None: continue
-                    if ei < si or ei - si + 1 > MAX_ANS_LEN: continue
-                    valid_answers.append({
-                        "score": sl[si] + el[ei],
-                        "text":  context[offs[si][0]:offs[ei][1]],
-                    })
-        best = sorted(valid_answers, key=lambda x: x["score"], reverse=True)[:1]
-        if best and best[0]["score"] > min_null_score + null_thresh:
-            predictions[example["id"]] = best[0]["text"]
+    null_scores = {}
+    for ex_id, min_null_score, best_score, best_text in precomputed:
+        if best_text and best_score > min_null_score + null_thresh:
+            predictions[ex_id] = best_text
         else:
-            predictions[example["id"]] = ""
-        null_scores[example["id"]] = float(min_null_score or 0)
+            predictions[ex_id] = ""
+        null_scores[ex_id] = min_null_score
     return predictions, null_scores
 
 thresholds = np.arange(-5.0, 5.5, 0.5).tolist()

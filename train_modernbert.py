@@ -1,23 +1,25 @@
 """
-train_modernbert.py
--------------------
-Fine-tunes answerdotai/ModernBERT-base on SQuAD 2.0 for Extractive QA.
+pipeline/02_train.py
+---------------------
+Pasos 5–9: Preprocessing → Training → Evaluation
+Fine-tunes answerdotai/ModernBERT-base on SQuAD 2.0
 
-Hardware objetivo: NVIDIA RTX 3050 Ti Laptop (4 GB VRAM)
-Genera automáticamente:
-  - logs/loss.png              (evidencia obligatoria)
-  - logs/train_results.json    (evidencia obligatoria)
-  - logs/eval_results.json     (evidencia obligatoria)
-  - modernbert-base-squad2-final/  (modelo listo para serving)
-
-Uso:
-  pip install -r requirements.txt
-  python train_modernbert.py
+Genera automáticamente (evidencias obligatorias):
+  logs/loss.png
+  logs/train_results.json
+  logs/eval_results.json
+  modernbert-base-squad2-final/  (modelo listo para serving)
 """
 
-import os
-import json
-import collections
+import os, json, collections, shutil, sys
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+except:
+    pass
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+os.chdir(PROJECT_ROOT)
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -32,50 +34,68 @@ from transformers import (
 import evaluate
 
 # ──────────────────────────────────────────────────────────────
-# CONFIGURACIÓN — ajusta aquí si tu VRAM no alcanza
+# CONFIGURACIÓN  (respeta los parámetros de la guía)
 # ──────────────────────────────────────────────────────────────
 MODEL_CHECKPOINT = "answerdotai/ModernBERT-base"
-MAX_LENGTH        = 384    # max_seq_length
-DOC_STRIDE        = 128    # doc_stride
-BATCH_SIZE        = 8      # por device (RTX 3050 Ti 4GB con fp16)
-GRAD_ACCUM        = 4      # effective batch = 8 × 4 = 32
-EPOCHS            = 3
+MAX_LENGTH        = 384          # max_seq_length
+DOC_STRIDE        = 128          # doc_stride
+BATCH_SIZE        = 4            # Seguro para 4GB VRAM RTX 3050 Ti
+GRAD_ACCUM        = 8            # effective batch = 4 × 8 = 32 (exacto a la guía)
+EPOCHS            = int(os.getenv("EPOCHS", "2"))
 LR                = 3e-5
 OUTPUT_DIR        = "modernbert-base-squad2"
 FINAL_DIR         = "modernbert-base-squad2-final"
 LOGS_DIR          = "logs"
+SEED              = 42
+MAX_TRAIN_SAMPLES = int(os.getenv("MAX_TRAIN_SAMPLES", "30000"))  # Default 30k (subsampled per Section VI)
+MAX_EVAL_SAMPLES  = int(os.getenv("MAX_EVAL_SAMPLES", "0"))      # 0 = full val set (11.8k)
 
 os.makedirs(LOGS_DIR, exist_ok=True)
 os.makedirs(FINAL_DIR, exist_ok=True)
 
 # ──────────────────────────────────────────────────────────────
-# 1. Dataset — SQuAD 2.0
+# PASO 2: Data Collection (automático vía HuggingFace)
 # ──────────────────────────────────────────────────────────────
-print("Cargando SQuAD 2.0...")
+print("📦 [Paso 2] Cargando SQuAD 2.0 desde HuggingFace...")
 raw_datasets = load_dataset("squad_v2")
+if MAX_TRAIN_SAMPLES > 0 and MAX_TRAIN_SAMPLES < len(raw_datasets["train"]):
+    raw_datasets["train"] = raw_datasets["train"].shuffle(seed=SEED).select(range(MAX_TRAIN_SAMPLES))
+    print(f"   Subsample train activado (shuffled): {len(raw_datasets['train']):,} ejemplos")
+if MAX_EVAL_SAMPLES > 0 and MAX_EVAL_SAMPLES < len(raw_datasets["validation"]):
+    raw_datasets["validation"] = raw_datasets["validation"].select(range(MAX_EVAL_SAMPLES))
+    print(f"   Subsample val activado:   {len(raw_datasets['validation']):,} ejemplos")
+
 tokenizer    = AutoTokenizer.from_pretrained(MODEL_CHECKPOINT)
 
+print(f"   Train:      {len(raw_datasets['train']):,} ejemplos")
+print(f"   Validation: {len(raw_datasets['validation']):,} ejemplos")
+
 # ──────────────────────────────────────────────────────────────
-# 2. Preprocesamiento — TRAIN
+# PASO 3: Data Cleaning (mínimo — SQuAD ya está limpio)
 # ──────────────────────────────────────────────────────────────
+# Solo normalización de espacios en preguntas (ya incluida en preprocessing)
+
+# ──────────────────────────────────────────────────────────────
+# PASO 5: Train/Val Split — ya viene en SQuAD 2.0
+# ──────────────────────────────────────────────────────────────
+
+# ──────────────────────────────────────────────────────────────
+# PASO 6: Preprocessing — Tokenización con sliding window
+# ──────────────────────────────────────────────────────────────
+print("\n🔧 [Paso 6] Preprocesando train set...")
+
 def preprocess_training_examples(examples):
     questions = [q.strip() for q in examples["question"]]
     inputs = tokenizer(
-        questions,
-        examples["context"],
-        max_length=MAX_LENGTH,
-        truncation="only_second",
-        stride=DOC_STRIDE,
-        return_overflowing_tokens=True,
-        return_offsets_mapping=True,
-        padding="max_length",
+        questions, examples["context"],
+        max_length=MAX_LENGTH, truncation="only_second",
+        stride=DOC_STRIDE, return_overflowing_tokens=True,
+        return_offsets_mapping=True, padding="max_length",
     )
-
     offset_mapping  = inputs.pop("offset_mapping")
     sample_map      = inputs.pop("overflow_to_sample_mapping")
     answers         = examples["answers"]
-    start_positions = []
-    end_positions   = []
+    start_positions, end_positions = [], []
 
     for i, offset in enumerate(offset_mapping):
         sample_idx = sample_map[i]
@@ -90,13 +110,10 @@ def preprocess_training_examples(examples):
         else:
             start_char = answer["answer_start"][0]
             end_char   = start_char + len(answer["text"][0])
-
             idx = 0
-            while seq_ids[idx] != 1:
-                idx += 1
+            while seq_ids[idx] != 1: idx += 1
             context_start = idx
-            while idx < len(seq_ids) and seq_ids[idx] == 1:
-                idx += 1
+            while idx < len(seq_ids) and seq_ids[idx] == 1: idx += 1
             context_end = idx - 1
 
             if offset[context_start][0] > start_char or offset[context_end][1] < end_char:
@@ -104,32 +121,23 @@ def preprocess_training_examples(examples):
                 end_positions.append(cls_index)
             else:
                 idx = context_start
-                while idx <= context_end and offset[idx][0] <= start_char:
-                    idx += 1
+                while idx <= context_end and offset[idx][0] <= start_char: idx += 1
                 start_positions.append(idx - 1)
                 idx = context_end
-                while idx >= context_start and offset[idx][1] >= end_char:
-                    idx -= 1
+                while idx >= context_start and offset[idx][1] >= end_char: idx -= 1
                 end_positions.append(idx + 1)
 
     inputs["start_positions"] = start_positions
     inputs["end_positions"]   = end_positions
     return inputs
 
-# ──────────────────────────────────────────────────────────────
-# 3. Preprocesamiento — VALIDATION
-# ──────────────────────────────────────────────────────────────
 def preprocess_validation_examples(examples):
     questions = [q.strip() for q in examples["question"]]
     inputs = tokenizer(
-        questions,
-        examples["context"],
-        max_length=MAX_LENGTH,
-        truncation="only_second",
-        stride=DOC_STRIDE,
-        return_overflowing_tokens=True,
-        return_offsets_mapping=True,
-        padding="max_length",
+        questions, examples["context"],
+        max_length=MAX_LENGTH, truncation="only_second",
+        stride=DOC_STRIDE, return_overflowing_tokens=True,
+        return_offsets_mapping=True, padding="max_length",
     )
     sample_map  = inputs.pop("overflow_to_sample_mapping")
     example_ids = []
@@ -144,202 +152,222 @@ def preprocess_validation_examples(examples):
     inputs["example_id"] = example_ids
     return inputs
 
-print("Preprocesando train...")
 train_dataset = raw_datasets["train"].map(
     preprocess_training_examples, batched=True,
     remove_columns=raw_datasets["train"].column_names,
 )
+print(f"   Train tokenizado: {len(train_dataset):,} chunks (sliding window)")
 
-print("Preprocesando validation...")
 val_dataset_raw = raw_datasets["validation"]
+print("🔧 [Paso 6] Preprocesando validation set para evaluación de loss...")
+val_eval_dataset = val_dataset_raw.map(
+    preprocess_training_examples, batched=True,
+    remove_columns=val_dataset_raw.column_names,
+)
+print(f"   Val eval tokenizado: {len(val_eval_dataset):,} chunks")
+
+print("🔧 [Paso 6] Preprocesando validation set con sliding window offsets...")
 val_dataset = val_dataset_raw.map(
     preprocess_validation_examples, batched=True,
-    remove_columns=raw_datasets["validation"].column_names,
+    remove_columns=val_dataset_raw.column_names,
 )
+print(f"   Val inference tokenizado: {len(val_dataset):,} chunks")
 
 # ──────────────────────────────────────────────────────────────
-# 4. Evaluación EM + F1 separado por tipo (SQuAD 2.0)
+# PASO 9: Función de evaluación EM + F1
 # ──────────────────────────────────────────────────────────────
 squad_metric = evaluate.load("squad_v2")
 
 def postprocess_qa_predictions(examples, features, raw_predictions,
-                                n_best_size=20, max_answer_length=30,
-                                null_score_diff_threshold=0.0):
-    all_start_logits, all_end_logits = raw_predictions
-    example_id_to_index = {k: i for i, k in enumerate(examples["id"])}
-    features_per_example = collections.defaultdict(list)
-    for i, feat in enumerate(features):
-        features_per_example[example_id_to_index[feat["example_id"]]].append(i)
+                                n_best=20, max_ans_len=30, null_thresh=0.0):
+    start_logits, end_logits = raw_predictions
+    raw_ids = list(examples["id"])
+    raw_contexts = list(examples["context"])
+    id_to_idx = {k: i for i, k in enumerate(raw_ids)}
+
+    feat_ex_ids = list(features["example_id"])
+    feat_offsets = list(features["offset_mapping"])
+    feat_input_ids = list(features["input_ids"])
+
+    feats_per_ex = collections.defaultdict(list)
+    for i, eid in enumerate(feat_ex_ids):
+        feats_per_ex[id_to_idx[eid]].append(i)
+
+    cls_id = tokenizer.cls_token_id
 
     predictions = {}
-    for example_idx, example in enumerate(examples):
-        feat_indices   = features_per_example[example_idx]
+    for ex_idx in range(len(raw_ids)):
+        feat_idxs      = feats_per_ex[ex_idx]
         min_null_score = None
         valid_answers  = []
-        context        = example["context"]
+        context        = raw_contexts[ex_idx]
 
-        for feat_idx in feat_indices:
-            start_logits    = all_start_logits[feat_idx]
-            end_logits      = all_end_logits[feat_idx]
-            offset_mapping  = features[feat_idx]["offset_mapping"]
-            input_ids       = features[feat_idx]["input_ids"]
-            cls_index       = input_ids.index(tokenizer.cls_token_id)
-            null_score      = start_logits[cls_index] + end_logits[cls_index]
+        for fi in feat_idxs:
+            sl     = start_logits[fi]
+            el     = end_logits[fi]
+            offs   = feat_offsets[fi]
+            ids    = feat_input_ids[fi]
+            cls_i  = ids.index(cls_id) if cls_id in ids else 0
+            ns     = float(sl[cls_i] + el[cls_i])
+            if min_null_score is None or ns < min_null_score:
+                min_null_score = ns
 
-            if min_null_score is None or null_score < min_null_score:
-                min_null_score = null_score
-
-            start_indexes = np.argsort(start_logits)[-n_best_size:].tolist()
-            end_indexes   = np.argsort(end_logits)[-n_best_size:].tolist()
-            for si in start_indexes:
-                for ei in end_indexes:
-                    if (offset_mapping[si] is None or offset_mapping[ei] is None
-                            or ei < si or ei - si + 1 > max_answer_length):
-                        continue
+            for si in np.argsort(sl)[-n_best:].tolist():
+                for ei in np.argsort(el)[-n_best:].tolist():
+                    if offs[si] is None or offs[ei] is None: continue
+                    if ei < si or ei - si + 1 > max_ans_len: continue
                     valid_answers.append({
-                        "score": start_logits[si] + end_logits[ei],
-                        "text":  context[offset_mapping[si][0]:offset_mapping[ei][1]],
+                        "score": float(sl[si] + el[ei]),
+                        "text":  context[offs[si][0]:offs[ei][1]],
                     })
 
         best = sorted(valid_answers, key=lambda x: x["score"], reverse=True)[:1]
-        if best and best[0]["score"] > min_null_score + null_score_diff_threshold:
-            predictions[example["id"]] = best[0]["text"]
+        if best and min_null_score is not None and best[0]["score"] > min_null_score + null_thresh:
+            predictions[raw_ids[ex_idx]] = best[0]["text"]
         else:
-            predictions[example["id"]] = ""
-
+            predictions[raw_ids[ex_idx]] = ""
     return predictions
 
 def compute_metrics(p):
-    predictions = postprocess_qa_predictions(
+    preds = postprocess_qa_predictions(
         val_dataset_raw, val_dataset,
         (p.predictions[0], p.predictions[1]),
     )
-    formatted = [
-        {"id": k, "prediction_text": v, "no_answer_probability": 0.0}
-        for k, v in predictions.items()
-    ]
+    formatted = [{"id": k, "prediction_text": v, "no_answer_probability": 0.0}
+                 for k, v in preds.items()]
     refs = [{"id": ex["id"], "answers": ex["answers"]} for ex in val_dataset_raw]
     return squad_metric.compute(predictions=formatted, references=refs)
 
 # ──────────────────────────────────────────────────────────────
-# 5. Modelo + TrainingArguments
+# PASO 7: Model Training
 # ──────────────────────────────────────────────────────────────
-print(f"Cargando modelo: {MODEL_CHECKPOINT}")
+print(f"\n🤖 [Paso 7] Cargando modelo: {MODEL_CHECKPOINT}")
 model = AutoModelForQuestionAnswering.from_pretrained(MODEL_CHECKPOINT)
-
-print(f"Parámetros del modelo: {model.num_parameters():,}")
+print(f"   Parámetros: {model.num_parameters():,}")
 
 training_args = TrainingArguments(
     output_dir=OUTPUT_DIR,
     eval_strategy="epoch",
     save_strategy="epoch",
-    learning_rate=LR,
-    per_device_train_batch_size=BATCH_SIZE,
-    per_device_eval_batch_size=BATCH_SIZE,
-    gradient_accumulation_steps=GRAD_ACCUM,
-    num_train_epochs=EPOCHS,
+    learning_rate=LR,                       # 3e-5 (guía)
+    per_device_train_batch_size=BATCH_SIZE,  # 4 (4GB VRAM)
+    per_device_eval_batch_size=16,          # Más rápido en evaluación sin riesgo OOM
+    gradient_accumulation_steps=GRAD_ACCUM, # effective batch = 32
+    num_train_epochs=EPOCHS,                # 2 (óptimo con 30k)
     weight_decay=0.01,
-    warmup_ratio=0.1,
+    warmup_ratio=0.1,                       # 10% warmup lineal (guía)
     lr_scheduler_type="linear",
-    fp16=True,                       # Obligatorio con 4 GB VRAM
-    gradient_checkpointing=True,     # Obligatorio con 4 GB VRAM
+    fp16=True,                              # obligatorio RTX 3050 Ti 4GB
+    gradient_checkpointing=True,            # obligatorio RTX 3050 Ti 4GB
     logging_dir=LOGS_DIR,
     logging_steps=50,
     load_best_model_at_end=True,
-    metric_for_best_model="f1",
-    save_total_limit=2,
-    seed=42,
+    metric_for_best_model="loss",
+    greater_is_better=False,
+    save_total_limit=1,
+    seed=SEED,
     report_to="none",
-    dataloader_num_workers=2,
+    dataloader_num_workers=0,
 )
 
 trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
-    eval_dataset=val_dataset,
+    eval_dataset=val_eval_dataset,
     tokenizer=tokenizer,
     data_collator=default_data_collator,
-    compute_metrics=compute_metrics,
 )
 
 # ──────────────────────────────────────────────────────────────
-# 6. Entrenamiento
+# ¡ENTRENAR!
 # ──────────────────────────────────────────────────────────────
-if __name__ == "__main__":
-    print("\n🚀 Iniciando entrenamiento...")
-    train_result = trainer.train()
+print("\n🚀 Iniciando entrenamiento...")
+print(f"   Epochs: {EPOCHS} | LR: {LR} | Batch: {BATCH_SIZE}×{GRAD_ACCUM}={BATCH_SIZE*GRAD_ACCUM}")
+train_result = trainer.train()
 
-    # Guardar modelo final
-    trainer.save_model(FINAL_DIR)
-    tokenizer.save_pretrained(FINAL_DIR)
-    print(f"\n✅ Modelo guardado en: {FINAL_DIR}/")
+# Guardar modelo final
+trainer.save_model(FINAL_DIR)
+tokenizer.save_pretrained(FINAL_DIR)
+print(f"\n✅ Modelo guardado en: {FINAL_DIR}/")
 
-    # Guardar métricas de train — evidencia obligatoria
-    trainer.log_metrics("train", train_result.metrics)
-    trainer.save_metrics("train", train_result.metrics)
+# ── Evidencias obligatorias ───────────────────────────────────
+trainer.log_metrics("train", train_result.metrics)
+trainer.save_metrics("train", train_result.metrics)
 
-    # Copiar a logs/
-    import shutil
-    if os.path.exists(f"{OUTPUT_DIR}/train_results.json"):
-        shutil.copy(f"{OUTPUT_DIR}/train_results.json", f"{LOGS_DIR}/train_results.json")
+print("\n📊 [Paso 9] Evaluación final (Loss + EM + F1)...")
+eval_loss_metrics = trainer.evaluate()
 
-    # Evaluación final
-    print("\n📊 Evaluando en validation set...")
-    eval_metrics = trainer.evaluate()
-    trainer.log_metrics("eval", eval_metrics)
-    trainer.save_metrics("eval", eval_metrics)
+# Predicciones con sliding window y metricas oficiales SQuAD 2.0
+pred_output = trainer.predict(val_dataset)
+final_preds = postprocess_qa_predictions(
+    val_dataset_raw, val_dataset,
+    (pred_output.predictions[0], pred_output.predictions[1]),
+)
+formatted = [{"id": k, "prediction_text": v, "no_answer_probability": 0.0}
+             for k, v in final_preds.items()]
+refs = [{"id": ex["id"], "answers": ex["answers"]} for ex in val_dataset_raw]
+squad_scores = squad_metric.compute(predictions=formatted, references=refs)
 
-    if os.path.exists(f"{OUTPUT_DIR}/eval_results.json"):
-        shutil.copy(f"{OUTPUT_DIR}/eval_results.json", f"{LOGS_DIR}/eval_results.json")
+eval_metrics = {**eval_loss_metrics, **squad_scores}
+with open(os.path.join(LOGS_DIR, "eval_results.json"), "w") as f:
+    json.dump(eval_metrics, f, indent=2)
+with open(os.path.join(LOGS_DIR, "train_results.json"), "w") as f:
+    json.dump(train_result.metrics, f, indent=2)
 
-    # Guardar trainer_state.json en el modelo final
-    if os.path.exists(f"{OUTPUT_DIR}/trainer_state.json"):
-        shutil.copy(f"{OUTPUT_DIR}/trainer_state.json", f"{FINAL_DIR}/trainer_state.json")
+# Copiar JSONs a logs/
+for fname in ["train_results.json", "eval_results.json"]:
+    src = os.path.join(OUTPUT_DIR, fname)
+    if os.path.exists(src):
+        shutil.copy(src, os.path.join(LOGS_DIR, fname))
 
-    # ──────────────────────────────────────────────────────────
-    # 7. Generar loss.png — evidencia obligatoria
-    # ──────────────────────────────────────────────────────────
-    log_history = trainer.state.log_history
+if os.path.exists(os.path.join(OUTPUT_DIR, "trainer_state.json")):
+    shutil.copy(
+        os.path.join(OUTPUT_DIR, "trainer_state.json"),
+        os.path.join(FINAL_DIR, "trainer_state.json"),
+    )
 
-    train_steps  = [x["step"] for x in log_history if "loss" in x and "eval_loss" not in x]
-    train_losses = [x["loss"] for x in log_history if "loss" in x and "eval_loss" not in x]
-    eval_steps   = [x["step"] for x in log_history if "eval_loss" in x]
-    eval_losses  = [x["eval_loss"] for x in log_history if "eval_loss" in x]
+# ── Loss curve (evidencia obligatoria) ───────────────────────
+log_history  = trainer.state.log_history
+train_steps  = [x["step"] for x in log_history if "loss" in x and "eval_loss" not in x]
+train_losses = [x["loss"] for x in log_history if "loss" in x and "eval_loss" not in x]
+eval_steps   = [x["step"] for x in log_history if "eval_loss" in x]
+eval_losses  = [x["eval_loss"] for x in log_history if "eval_loss" in x]
 
-    plt.figure(figsize=(12, 5))
-    plt.plot(train_steps, train_losses, label="Train Loss", color="royalblue", alpha=0.8)
-    if eval_losses:
-        plt.plot(eval_steps, eval_losses, label="Eval Loss",
-                 color="tomato", marker="o", linestyle="--", linewidth=2)
-    plt.xlabel("Step")
-    plt.ylabel("Loss")
-    plt.title(f"Training Loss — {MODEL_CHECKPOINT} / SQuAD 2.0\n"
-              f"LR={LR}, Epochs={EPOCHS}, Batch={BATCH_SIZE}×{GRAD_ACCUM}={BATCH_SIZE*GRAD_ACCUM}")
-    plt.legend()
-    plt.grid(alpha=0.3)
-    plt.tight_layout()
-    loss_path = os.path.join(LOGS_DIR, "loss.png")
-    plt.savefig(loss_path, dpi=150)
-    plt.close()
-    print(f"📈 Loss curve guardada en: {loss_path}")
+plt.figure(figsize=(12, 5))
+plt.plot(train_steps, train_losses, label="Train Loss", color="royalblue", alpha=0.8)
+if eval_losses:
+    plt.plot(eval_steps, eval_losses, label="Eval Loss",
+             color="tomato", marker="o", linestyle="--", linewidth=2)
+plt.xlabel("Step"); plt.ylabel("Loss")
+plt.title(f"Training Loss — ModernBERT-base / SQuAD 2.0\n"
+          f"LR={LR}, Epochs={EPOCHS}, Effective Batch={BATCH_SIZE*GRAD_ACCUM}")
+plt.legend(); plt.grid(alpha=0.3); plt.tight_layout()
+plt.savefig(os.path.join(LOGS_DIR, "loss.png"), dpi=150)
+plt.close()
+print("📈 Loss curve guardada en logs/loss.png")
 
-    # ──────────────────────────────────────────────────────────
-    # 8. Resumen final para el REPORT.md
-    # ──────────────────────────────────────────────────────────
-    print("\n" + "="*50)
-    print("📋 RESUMEN PARA EL REPORTE (Sección 2 y 6)")
-    print("="*50)
-    print(f"Modelo base:        {MODEL_CHECKPOINT}")
-    print(f"Parámetros:         {model.num_parameters():,}")
-    print(f"max_seq_length:     {MAX_LENGTH}")
-    print(f"doc_stride:         {DOC_STRIDE}")
-    print(f"Epochs:             {EPOCHS}")
-    print(f"Learning rate:      {LR}")
-    print(f"Batch size:         {BATCH_SIZE} × {GRAD_ACCUM} = {BATCH_SIZE*GRAD_ACCUM} (effective)")
-    print(f"EM (all):           {eval_metrics.get('eval_exact', eval_metrics.get('eval_exact_match', 'N/A'))}")
-    print(f"F1 (all):           {eval_metrics.get('eval_f1', 'N/A')}")
-    print(f"Runtime:            {train_result.metrics.get('train_runtime', 0)/3600:.2f} horas")
-    print("="*50)
-    print(f"\nEvidencias generadas en: {LOGS_DIR}/")
-    print(f"Modelo final en:         {FINAL_DIR}/")
+# ── Resumen para el reporte ───────────────────────────────────
+print("\n" + "="*55)
+print("📋 RESUMEN PARA REPORT.md — Secciones 2 y 6")
+print("="*55)
+print(f"Base checkpoint:    {MODEL_CHECKPOINT}")
+print(f"Parámetros:         {model.num_parameters():,}")
+print(f"Training data:      squad_v2 train — {len(raw_datasets['train']):,} ejemplos")
+print(f"Validation data:    squad_v2 val   — {len(raw_datasets['validation']):,} ejemplos")
+print(f"Epochs:             {EPOCHS}")
+print(f"Learning rate:      {LR} (linear, 10% warmup)")
+print(f"Batch size:         {BATCH_SIZE} × {GRAD_ACCUM} = {BATCH_SIZE*GRAD_ACCUM} (effective)")
+print(f"max_seq_length:     {MAX_LENGTH}")
+print(f"doc_stride:         {DOC_STRIDE}")
+print(f"Hardware:           NVIDIA RTX 3050 Ti 4GB (fp16)")
+print(f"Runtime:            {train_result.metrics.get('train_runtime', 0)/3600:.2f} horas")
+print(f"EM  (all):          {eval_metrics.get('exact', eval_metrics.get('eval_exact', 'N/A')):.2f}%")
+print(f"F1  (all):          {eval_metrics.get('f1', eval_metrics.get('eval_f1', 'N/A')):.2f}%")
+print(f"Best F1 (thresh):   {eval_metrics.get('best_f1', 'N/A')}")
+print("="*55)
+print("\nArchivos generados:")
+print(f"  logs/loss.png")
+print(f"  logs/train_results.json")
+print(f"  logs/eval_results.json")
+print(f"  {FINAL_DIR}/  (modelo completo)")
