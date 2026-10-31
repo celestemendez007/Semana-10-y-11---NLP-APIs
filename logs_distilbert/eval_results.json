@@ -1,0 +1,12 @@
+{
+    "optimal_threshold": 0.8,
+    "em_general": 48.5,
+    "f1_general": 49.25,
+    "em_answerable": 11.36,
+    "f1_answerable": 12.88,
+    "em_unanswerable": 84.62,
+    "f1_unanswerable": 84.62,
+    "num_parameters": 66364418,
+    "disk_size_mb": 253.86,
+    "cpu_latency_ms": 22.93
+}
