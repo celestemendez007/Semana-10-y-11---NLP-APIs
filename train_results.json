@@ -1,0 +1,67 @@
+{
+  "model_checkpoint": "FacebookAI/roberta-base",
+  "config": {
+    "model_checkpoint": "FacebookAI/roberta-base",
+    "dataset": "rajpurkar/squad_v2",
+    "max_train_samples": 30000,
+    "num_train_epochs": 2,
+    "learning_rate": 3e-05,
+    "lr_scheduler_type": "linear",
+    "warmup_ratio": 0.1,
+    "weight_decay": 0.01,
+    "max_seq_length": 384,
+    "doc_stride": 128,
+    "effective_batch_size": 32,
+    "per_device_train_batch_size": 16,
+    "n_best": 20,
+    "max_answer_length": 30,
+    "null_threshold": 0.0,
+    "seed": 42,
+    "gradient_accumulation_steps": 2,
+    "precision": "fp16",
+    "total_steps": 1898,
+    "warmup_steps": 189
+  },
+  "data": {
+    "train_examples": 30000,
+    "train_features": 30353,
+    "val_examples": 11873,
+    "val_features": 12165
+  },
+  "hardware": {
+    "gpu": "Tesla T4",
+    "gpu_memory_gb": 14.6,
+    "precision": "fp16"
+  },
+  "num_parameters": 124056578,
+  "model_weights_mb": 473.3,
+  "model_dir_mb": 476.7,
+  "training_time": {
+    "total_seconds": 1333.1,
+    "total_hours": 0.37,
+    "num_sessions": 1,
+    "sessions": [
+      {
+        "gpu": "Tesla T4",
+        "resumed_from": null,
+        "seconds": 1333.1,
+        "last_step": 1898
+      }
+    ],
+    "note": "Suma de todas las sesiones (incluye la evaluación de loss al final de cada epoch)."
+  },
+  "global_steps": 1898,
+  "final_train_loss_logged": 0.7976839447021484,
+  "trainer_metrics_last_session": {
+    "train_runtime": 1333.0561,
+    "train_samples_per_second": 45.539,
+    "train_steps_per_second": 1.424,
+    "total_flos": 1.1896710685811712e+16,
+    "train_loss": 1.3067715748343753,
+    "epoch": 2.0
+  },
+  "versions": {
+    "transformers": "5.21.0",
+    "torch": "2.11.0+cu130"
+  }
+}
