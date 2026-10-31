@@ -49,6 +49,9 @@ modernbert-base-squad2/
 !logs/eda_squad2.png
 !logs/eda_stats.json
 
+# Logs ModernBERT
+!logs_modernBert/**
+
 # OS
 .DS_Store
 Thumbs.db

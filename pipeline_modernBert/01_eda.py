@@ -18,7 +18,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datasets import load_dataset
 
-os.makedirs("logs", exist_ok=True)
+LOGS_DIR = "logs_modernBert"
+os.makedirs(LOGS_DIR, exist_ok=True)
 
 print("Cargando SQuAD 2.0...")
 ds = load_dataset("squad_v2")
@@ -70,9 +71,9 @@ axes[2].pie(sizes, labels=labels, autopct="%1.1f%%",
 axes[2].set_title("Train SQuAD 2.0\nAnswerable vs Unanswerable")
 
 plt.tight_layout()
-plt.savefig("logs/eda_squad2.png", dpi=150)
+plt.savefig(f"{LOGS_DIR}/eda_squad2.png", dpi=150)
 plt.close()
-print("✅ EDA guardada en logs/eda_squad2.png")
+print(f"✅ EDA guardada en {LOGS_DIR}/eda_squad2.png")
 
 # Guardar stats en JSON
 stats = {
@@ -85,6 +86,6 @@ stats = {
     "answer_len_mean": float(np.mean(ans_lens)),
     "answer_len_max": int(max(ans_lens)),
 }
-with open("logs/eda_stats.json", "w") as f:
+with open(f"{LOGS_DIR}/eda_stats.json", "w") as f:
     json.dump(stats, f, indent=2)
-print("✅ Stats guardadas en logs/eda_stats.json")
+print(f"✅ Stats guardadas en {LOGS_DIR}/eda_stats.json")

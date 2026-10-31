@@ -45,7 +45,7 @@ EPOCHS            = int(os.getenv("EPOCHS", "2"))
 LR                = 3e-5
 OUTPUT_DIR        = "modernbert-base-squad2"
 FINAL_DIR         = "modernbert-base-squad2-final"
-LOGS_DIR          = "logs"
+LOGS_DIR          = "logs_modernBert"
 SEED              = 42
 MAX_TRAIN_SAMPLES = int(os.getenv("MAX_TRAIN_SAMPLES", "30000"))  # Default 30k (subsampled per Section VI)
 MAX_EVAL_SAMPLES  = int(os.getenv("MAX_EVAL_SAMPLES", "0"))      # 0 = full val set (11.8k)

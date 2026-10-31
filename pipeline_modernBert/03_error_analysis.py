@@ -26,7 +26,8 @@ from transformers import AutoTokenizer, AutoModelForQuestionAnswering
 import evaluate
 import torch
 
-os.makedirs("logs", exist_ok=True)
+LOGS_DIR      = "logs_modernBert"
+os.makedirs(LOGS_DIR, exist_ok=True)
 
 MODEL_DIR     = "modernbert-base-squad2-final"
 MAX_LENGTH    = 384
@@ -177,9 +178,9 @@ plt.axvline(best_thresh, color="green", linestyle="--", label=f"Mejor threshold=
 plt.xlabel("Null Score Threshold"); plt.ylabel("Score")
 plt.title("F1 y EM vs No-Answer Threshold\nModernBERT-base / SQuAD 2.0 Validation")
 plt.legend(); plt.grid(alpha=0.3); plt.tight_layout()
-plt.savefig("logs/threshold_search.png", dpi=150)
+plt.savefig(f"{LOGS_DIR}/threshold_search.png", dpi=150)
 plt.close()
-print("📈 Curva guardada en logs/threshold_search.png")
+print(f"📈 Curva guardada en {LOGS_DIR}/threshold_search.png")
 
 # ── Paso 10: Error Analysis con el mejor threshold ────────────
 print(f"\n🔍 [Paso 10] Error analysis con threshold={best_thresh}...")
@@ -220,7 +221,7 @@ print(f"   Total errores: {len(errors):,} / {len(val_dataset_raw):,}")
 for t, c in error_types.items():
     print(f"   {t}: {c:,} ({c/len(errors)*100:.1f}%)")
 
-with open("logs/error_analysis.json", "w", encoding="utf-8") as f:
+with open(f"{LOGS_DIR}/error_analysis.json", "w", encoding="utf-8") as f:
     json.dump({
         "best_threshold": best_thresh,
         "best_f1": best_f1,
@@ -229,5 +230,5 @@ with open("logs/error_analysis.json", "w", encoding="utf-8") as f:
         "samples": errors[:50],  # primeros 50 errores
     }, f, indent=2, ensure_ascii=False)
 
-print("✅ Error analysis guardado en logs/error_analysis.json")
+print(f"✅ Error analysis guardado en {LOGS_DIR}/error_analysis.json")
 print(f"\n💾 Guarda este threshold en app.py: NULL_THRESHOLD = {best_thresh}")
