@@ -1,0 +1,65 @@
+{
+  "dataset": "rajpurkar/squad_v2",
+  "tokenizer": "FacebookAI/roberta-base",
+  "max_seq_length": 384,
+  "doc_stride": 128,
+  "train_total": 130319,
+  "val_total": 11873,
+  "train_unanswerable": 43498,
+  "val_unanswerable": 5945,
+  "train_unanswerable_pct": 33.38,
+  "val_unanswerable_pct": 50.07,
+  "train_articles": 442,
+  "train_unique_contexts": 19029,
+  "context_len_chars_mean": 754.6,
+  "context_len_chars_max": 3706,
+  "context_len_tokens_mean": 152.7,
+  "context_len_tokens_median": 141.0,
+  "context_len_tokens_p95": 275.0,
+  "context_len_tokens_max": 878,
+  "contexts_longer_than_max_seq_pct": 0.74,
+  "train_features": 131821,
+  "val_features": 12165,
+  "train_examples_multi_window_pct": 1.1,
+  "val_examples_multi_window_pct": 2.03,
+  "question_len_words_mean": 9.89,
+  "answer_len_words_mean": 3.16,
+  "answer_len_words_median": 2.0,
+  "answer_len_words_max": 43,
+  "answer_len_chars_mean": 20.15,
+  "answer_len_chars_max": 239,
+  "question_types_train": {
+    "what": {
+      "answerable": 37242,
+      "unanswerable": 22103
+    },
+    "who": {
+      "answerable": 8070,
+      "unanswerable": 4466
+    },
+    "how": {
+      "answerable": 8059,
+      "unanswerable": 3572
+    },
+    "when": {
+      "answerable": 5405,
+      "unanswerable": 2466
+    },
+    "which": {
+      "answerable": 4117,
+      "unanswerable": 1604
+    },
+    "where": {
+      "answerable": 3265,
+      "unanswerable": 1462
+    },
+    "why": {
+      "answerable": 1195,
+      "unanswerable": 671
+    },
+    "other": {
+      "answerable": 19468,
+      "unanswerable": 7154
+    }
+  }
+}

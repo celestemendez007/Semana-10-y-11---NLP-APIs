@@ -20,7 +20,9 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, Request
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 
@@ -32,7 +34,8 @@ from transformers import AutoTokenizer, AutoModelForQuestionAnswering
 # ──────────────────────────────────────────────────────────────
 # Configuración
 # ──────────────────────────────────────────────────────────────
-MODEL_DIR        = os.getenv("MODEL_DIR", "modernbert-base-squad2-final")
+BASE_DIR         = os.path.dirname(os.path.abspath(__file__))
+MODEL_DIR        = os.getenv("MODEL_DIR", os.path.join(BASE_DIR, "modernbert-base-squad2-final"))
 QA_API_TOKEN     = os.getenv("QA_API_TOKEN", "")          # OBLIGATORIO en producción
 MAX_SEQ_LENGTH   = int(os.getenv("MAX_SEQ_LENGTH", "384"))
 DOC_STRIDE       = int(os.getenv("DOC_STRIDE", "128"))
@@ -52,19 +55,24 @@ model_state = {"tokenizer": None, "model": None, "params": 0, "ready": False}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Carga el modelo al arrancar el servidor."""
-    logger.info(f"Cargando modelo desde: {MODEL_DIR}")
+    target_dir = MODEL_DIR
+    if not os.path.isabs(target_dir):
+        target_dir = os.path.join(BASE_DIR, target_dir)
+    if not os.path.exists(target_dir) or len(os.listdir(target_dir)) == 0:
+        target_dir = "answerdotai/ModernBERT-base"
+    logger.info(f"Cargando modelo desde: {target_dir}")
     try:
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
-        model     = AutoModelForQuestionAnswering.from_pretrained(MODEL_DIR)
+        tokenizer = AutoTokenizer.from_pretrained(target_dir)
+        model     = AutoModelForQuestionAnswering.from_pretrained(target_dir)
         model.eval()
         # Usar CPU para serving (el contrato no garantiza GPU)
         model_state["tokenizer"] = tokenizer
         model_state["model"]     = model
         model_state["params"]    = model.num_parameters()
         model_state["ready"]     = True
-        logger.info(f"✅ Modelo listo — {model_state['params']:,} parámetros")
+        logger.info(f"Modelo listo — {model_state['params']:,} parámetros")
     except Exception as e:
-        logger.error(f"❌ Error cargando modelo: {e}")
+        logger.error(f"Error cargando modelo: {e}")
     yield
     logger.info("Apagando servicio...")
 
@@ -76,6 +84,19 @@ app = FastAPI(
     version="1.0",
     lifespan=lifespan,
 )
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Garantiza que todas las respuestas de error cumplan el esquema de qa_api_contract.yaml."""
+    if isinstance(exc.detail, dict) and "error" in exc.detail:
+        return JSONResponse(status_code=exc.status_code, content=exc.detail)
+    error_code = "unauthorized" if exc.status_code == 401 else ("bad_request" if exc.status_code in (400, 422) else "internal_error")
+    return JSONResponse(status_code=exc.status_code, content={"error": error_code, "detail": str(exc.detail)})
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Devuelve error bad_request exacto segun el contrato OpenAPI."""
+    return JSONResponse(status_code=422, content={"error": "bad_request", "detail": str(exc)})
 
 security = HTTPBearer(auto_error=False)
 
@@ -115,7 +136,7 @@ def health():
     """Liveness check — no requiere token."""
     if model_state["ready"]:
         return {"status": "ok"}
-    return {"status": "loading"}, 503
+    return JSONResponse(status_code=503, content={"status": "loading"})
 
 
 @app.get("/info", tags=["protected"], dependencies=[Depends(verify_token)])
@@ -175,14 +196,20 @@ def predict(req: PredictRequest):
         for chunk_idx in range(start_logits.shape[0]):
             sl = start_logits[chunk_idx]
             el = end_logits[chunk_idx]
-            offsets  = offset_mapping[chunk_idx].tolist()
-            seq_ids  = inputs.sequence_ids(chunk_idx) if hasattr(inputs, "sequence_ids") else None
+            raw_offsets = offset_mapping[chunk_idx].tolist()
+            seq_ids     = inputs.sequence_ids(chunk_idx) if hasattr(inputs, "sequence_ids") else None
             input_ids_chunk = inputs["input_ids"][chunk_idx].tolist()
 
             cls_index  = input_ids_chunk.index(tokenizer.cls_token_id)
-            null_score = sl[cls_index] + el[cls_index]
+            null_score = float(sl[cls_index] + el[cls_index])
             if min_null_score is None or null_score < min_null_score:
                 min_null_score = null_score
+
+            # Mask offsets: solo tokens del contexto (seq_ids == 1) son spans válidos
+            offsets = [
+                raw_offsets[k] if (seq_ids is None or seq_ids[k] == 1) else None
+                for k in range(len(raw_offsets))
+            ]
 
             start_idxs = np.argsort(sl)[-N_BEST:].tolist()
             end_idxs   = np.argsort(el)[-N_BEST:].tolist()
@@ -197,9 +224,13 @@ def predict(req: PredictRequest):
                     if score > best_answer_score:
                         char_start = offsets[si][0]
                         char_end   = offsets[ei][1]
-                        best_answer_score = score
-                        best_answer_text  = req.context[char_start:char_end]
-                        best_answer_start = char_start
+                        raw_span   = req.context[char_start:char_end]
+                        leading_ws = len(raw_span) - len(raw_span.lstrip())
+                        trimmed    = raw_span.strip()
+                        if trimmed:
+                            best_answer_score = score
+                            best_answer_text  = trimmed
+                            best_answer_start = char_start + leading_ws
 
         # No-answer threshold
         if min_null_score is not None and best_answer_score <= min_null_score + NULL_THRESHOLD:

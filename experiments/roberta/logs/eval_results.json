@@ -1,0 +1,36 @@
+{
+  "split": "validation",
+  "num_examples": 11873,
+  "null_threshold": 0.0,
+  "overall": {
+    "exact_match": 74.92630337741093,
+    "f1": 78.31239911116279,
+    "count": 11873
+  },
+  "answerable": {
+    "exact_match": 73.0600539811066,
+    "f1": 79.84195591208429,
+    "count": 5928
+  },
+  "unanswerable": {
+    "exact_match": 76.78721614802355,
+    "f1": 76.78721614802355,
+    "count": 5945
+  },
+  "eval_loss": 0.9500092267990112,
+  "gpu_eval_seconds": 92.0,
+  "cpu_latency": {
+    "device": "cpu",
+    "cpu": "x86_64",
+    "cpu_count": 2,
+    "torch_threads": 1,
+    "environment": "Google Colab",
+    "method": "tokenizer + modelo + postproceso en CPU (como la API), 30 preguntas aleatorias de validation (3 de calentamiento)",
+    "mean_ms": 401.6,
+    "p50_ms": 387.0,
+    "p95_ms": 622.1,
+    "long_context_chars": 4063,
+    "long_context_mean_ms": 2464.9
+  },
+  "metric": "SQuAD v2 oficial (normalización + EM/F1); '' en una pregunta no contestable cuenta como correcto"
+}

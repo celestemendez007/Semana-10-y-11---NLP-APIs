@@ -1,0 +1,812 @@
+{
+  "analysis_threshold": 0.0,
+  "normalization": "oficial SQuAD (lower, sin puntuación, sin artículos, espacios colapsados)",
+  "total_examples": 11873,
+  "total_errors": 2977,
+  "error_rate_pct": 25.07,
+  "breakdown_answerable": {
+    "correct": 4331,
+    "false_negative": 732,
+    "partial_overlap": 661,
+    "wrong_span": 204
+  },
+  "breakdown_unanswerable": {
+    "correct": 4565,
+    "false_positive": 1380
+  },
+  "by_question_type": {
+    "what": {
+      "n": 5813,
+      "error_rate_pct": 25.18
+    },
+    "other": {
+      "n": 2255,
+      "error_rate_pct": 25.28
+    },
+    "how": {
+      "n": 1133,
+      "error_rate_pct": 27.63
+    },
+    "who": {
+      "n": 984,
+      "error_rate_pct": 23.17
+    },
+    "when": {
+      "n": 736,
+      "error_rate_pct": 19.16
+    },
+    "where": {
+      "n": 429,
+      "error_rate_pct": 25.87
+    },
+    "which": {
+      "n": 336,
+      "error_rate_pct": 22.32
+    },
+    "why": {
+      "n": 187,
+      "error_rate_pct": 40.11
+    }
+  },
+  "by_context_length": {
+    "Q1 (≤590 chars)": {
+      "n": 3008,
+      "error_rate_pct": 26.16
+    },
+    "Q2 (≤716)": {
+      "n": 2936,
+      "error_rate_pct": 26.67
+    },
+    "Q3 (≤935)": {
+      "n": 2967,
+      "error_rate_pct": 23.56
+    },
+    "Q4 (>935)": {
+      "n": 2962,
+      "error_rate_pct": 23.9
+    }
+  },
+  "threshold_search": {
+    "best_threshold": 1.5,
+    "best_f1": 78.97217698321668,
+    "best_exact": 75.88646508885707,
+    "note": "Elegido sobre el mismo validation set: valor optimista; úsalo para NULL_THRESHOLD en la API.",
+    "grid": [
+      {
+        "threshold": -5.0,
+        "exact": 66.73966141665964,
+        "f1": 70.65293650020578,
+        "HasAns_f1": 86.68392629334402,
+        "NoAns_f1": 54.66778805719091
+      },
+      {
+        "threshold": -4.5,
+        "exact": 67.83458266655437,
+        "f1": 71.73090704173963,
+        "HasAns_f1": 86.41380892486077,
+        "NoAns_f1": 57.08999158957106
+      },
+      {
+        "threshold": -4.0,
+        "exact": 68.94634885875516,
+        "f1": 72.792597102085,
+        "HasAns_f1": 85.90865475591349,
+        "NoAns_f1": 59.71404541631623
+      },
+      {
+        "threshold": -3.5,
+        "exact": 69.88124315674219,
+        "f1": 73.70196876021433,
+        "HasAns_f1": 85.43580888833078,
+        "NoAns_f1": 62.00168208578638
+      },
+      {
+        "threshold": -3.0,
+        "exact": 70.72349027204582,
+        "f1": 74.47518929933975,
+        "HasAns_f1": 84.70713943169038,
+        "NoAns_f1": 64.27249789739277
+      },
+      {
+        "threshold": -2.5,
+        "exact": 71.67522951233892,
+        "f1": 75.39031855650555,
+        "HasAns_f1": 84.17834889024802,
+        "NoAns_f1": 66.62741799831792
+      },
+      {
+        "threshold": -2.0,
+        "exact": 72.37429461804093,
+        "f1": 76.0293264598948,
+        "HasAns_f1": 83.48451299904372,
+        "NoAns_f1": 68.59545836837678
+      },
+      {
+        "threshold": -1.5,
+        "exact": 73.05651478143687,
+        "f1": 76.62285327717007,
+        "HasAns_f1": 82.7164536032119,
+        "NoAns_f1": 70.5466778805719
+      },
+      {
+        "threshold": -1.0,
+        "exact": 73.5029057525478,
+        "f1": 77.02587452075393,
+        "HasAns_f1": 81.80300407977589,
+        "NoAns_f1": 72.26240538267452
+      },
+      {
+        "threshold": -0.5,
+        "exact": 74.30304051208626,
+        "f1": 77.76629475654299,
+        "HasAns_f1": 80.87368718698293,
+        "NoAns_f1": 74.66778805719092
+      },
+      {
+        "threshold": 0.0,
+        "exact": 74.92630337741093,
+        "f1": 78.31239911116279,
+        "HasAns_f1": 79.84195591208429,
+        "NoAns_f1": 76.78721614802355
+      },
+      {
+        "threshold": 0.5,
+        "exact": 75.35584940621578,
+        "f1": 78.6356637957936,
+        "HasAns_f1": 78.4988590161028,
+        "NoAns_f1": 78.77207737594617
+      },
+      {
+        "threshold": 1.0,
+        "exact": 75.71801566579634,
+        "f1": 78.89111682605702,
+        "HasAns_f1": 77.15489711129806,
+        "NoAns_f1": 80.62237174095878
+      },
+      {
+        "threshold": 1.5,
+        "exact": 75.88646508885707,
+        "f1": 78.97217698321668,
+        "HasAns_f1": 75.52912572903703,
+        "NoAns_f1": 82.4053826745164
+      },
+      {
+        "threshold": 2.0,
+        "exact": 75.83593026193886,
+        "f1": 78.8253582516862,
+        "HasAns_f1": 73.61563402872304,
+        "NoAns_f1": 84.0201850294365
+      },
+      {
+        "threshold": 2.5,
+        "exact": 76.00437968499958,
+        "f1": 78.88709401406264,
+        "HasAns_f1": 72.05237301433294,
+        "NoAns_f1": 85.70227081581162
+      },
+      {
+        "threshold": 3.0,
+        "exact": 75.70117072349028,
+        "f1": 78.4376531345481,
+        "HasAns_f1": 69.90388928247125,
+        "NoAns_f1": 86.94701429772918
+      },
+      {
+        "threshold": 3.5,
+        "exact": 75.41480670428705,
+        "f1": 78.00139441320229,
+        "HasAns_f1": 67.61311671186753,
+        "NoAns_f1": 88.35996635828427
+      },
+      {
+        "threshold": 4.0,
+        "exact": 75.01895056009434,
+        "f1": 77.43372938726839,
+        "HasAns_f1": 65.0254165005124,
+        "NoAns_f1": 89.80656013456687
+      },
+      {
+        "threshold": 4.5,
+        "exact": 74.06721131980123,
+        "f1": 76.2766571806408,
+        "HasAns_f1": 61.442771711496,
+        "NoAns_f1": 91.0681244743482
+      },
+      {
+        "threshold": 5.0,
+        "exact": 73.14073949296723,
+        "f1": 75.1459907141605,
+        "HasAns_f1": 58.0817050859021,
+        "NoAns_f1": 92.16148023549201
+      }
+    ]
+  },
+  "examples": {
+    "correct_answerable": [
+      {
+        "id": "571c8198dd7acb1400e4c0d2",
+        "question": "What characteristic due most items display after burning?",
+        "context": "Highly combustible materials that leave little residue, such as wood or coal, were thought to be made mostly of phlogiston; whereas non-combustible substances that corrode, such as iron, contained very little. Air did not play a role in phlogiston theory, nor were any initial quantitative experiments conducted to test the idea; instead, it was based on observations of what happens when something b...",
+        "gold": [
+          "become lighter",
+          "appear to become lighter",
+          "appear to become lighter",
+          "appear to become lighter and seem to lose something in the process",
+          "lighter"
+        ],
+        "prediction": "become lighter",
+        "f1": 1.0,
+        "score_diff": 5.449
+      },
+      {
+        "id": "5705e33f52bb89140068964c",
+        "question": "What is the name of the region that is not defined by the eight or 10 county definitions?",
+        "context": "The 8- and 10-county definitions are not used for the greater Southern California Megaregion, one of the 11 megaregions of the United States. The megaregion's area is more expansive, extending east into Las Vegas, Nevada, and south across the Mexican border into Tijuana....",
+        "gold": [
+          "Southern California Megaregion",
+          "the greater Southern California Megaregion",
+          "Southern California Megaregion"
+        ],
+        "prediction": "Southern California Megaregion",
+        "f1": 1.0,
+        "score_diff": 6.242
+      },
+      {
+        "id": "5727c8863acd2414000dec49",
+        "question": "How far from state house in downtown Boston is Harvard Yard?",
+        "context": "Harvard's 209-acre (85 ha) main campus is centered on Harvard Yard in Cambridge, about 3 miles (5 km) west-northwest of the State House in downtown Boston, and extends into the surrounding Harvard Square neighborhood. Harvard Yard itself contains the central administrative offices and main libraries of the university, academic buildings including Sever Hall and University Hall, Memorial Church, an...",
+        "gold": [
+          "3 miles",
+          "3 miles",
+          "about 3 miles"
+        ],
+        "prediction": "3 miles",
+        "f1": 1.0,
+        "score_diff": 6.432
+      },
+      {
+        "id": "572812e74b864d19001643ce",
+        "question": "What author argues pitching the conscience versus the collective?",
+        "context": "However, this definition is disputed by Thoreau's political philosophy pitching the conscience vs. the collective. The individual is the final judge of right and wrong. More than this, since only individuals act, only individuals can act unjustly. When the government knocks on the door, it is an individual in the form of a postman or tax collector whose hand hits the wood. Before Thoreau’s impriso...",
+        "gold": [
+          "Thoreau",
+          "Thoreau",
+          "Thoreau",
+          "Thoreau",
+          "Thoreau's"
+        ],
+        "prediction": "Thoreau",
+        "f1": 1.0,
+        "score_diff": 6.074
+      },
+      {
+        "id": "5726701add62a815002e84ca",
+        "question": "When rock folds deep in the Earth it can fold one of two ways, when it buckles upwards it creates what? ",
+        "context": "When rock units are placed under horizontal compression, they shorten and become thicker. Because rock units, other than muds, do not significantly change in volume, this is accomplished in two primary ways: through faulting and folding. In the shallow crust, where brittle deformation can occur, thrust faults form, which cause deeper rock to move on top of shallower rock. Because deeper rock is of...",
+        "gold": [
+          "antiforms",
+          "antiforms",
+          "antiforms"
+        ],
+        "prediction": "antiforms",
+        "f1": 1.0,
+        "score_diff": 4.434
+      },
+      {
+        "id": "57268e2bf1498d1400e8e3b2",
+        "question": " When was the Single European Act made?",
+        "context": "The principal Treaties that form the European Union began with common rules for coal and steel, and then atomic energy, but more complete and formal institutions were established through the Treaty of Rome 1957 and the Maastricht Treaty 1992 (now: TFEU). Minor amendments were made during the 1960s and 1970s. Major amending treaties were signed to complete the development of a single, internal mark...",
+        "gold": [
+          "1986",
+          "1986",
+          "1986",
+          "1986"
+        ],
+        "prediction": "1986",
+        "f1": 1.0,
+        "score_diff": 8.453
+      },
+      {
+        "id": "5711648850c2381900b54ac5",
+        "question": "How much turbine power is consumed by the pump while the work fluid is condensed?",
+        "context": "One of the principal advantages the Rankine cycle holds over others is that during the compression stage relatively little work is required to drive the pump, the working fluid being in its liquid phase at this point. By condensing the fluid, the work required by the pump consumes only 1% to 3% of the turbine power and contributes to a much higher efficiency for a real cycle. The benefit of this i...",
+        "gold": [
+          "1% to 3%",
+          "1% to 3%",
+          "1% to 3%"
+        ],
+        "prediction": "1% to 3%",
+        "f1": 1.0,
+        "score_diff": 7.107
+      },
+      {
+        "id": "57113c6da58dae1900cd6d35",
+        "question": "Who described a steam turbine in 1629?",
+        "context": "The history of the steam engine stretches back as far as the first century AD; the first recorded rudimentary steam engine being the aeolipile described by Greek mathematician Hero of Alexandria. In the following centuries, the few steam-powered \"engines\" known were, like the aeolipile, essentially experimental devices used by inventors to demonstrate the properties of steam. A rudimentary steam t...",
+        "gold": [
+          "Giovanni Branca",
+          "Giovanni Branca",
+          "Giovanni Branca",
+          "Giovanni Branca"
+        ],
+        "prediction": "Giovanni Branca",
+        "f1": 1.0,
+        "score_diff": 8.299
+      }
+    ],
+    "correct_unanswerable": [
+      {
+        "id": "5a8949463b2508001a72a5a5",
+        "question": "What does geometry ramification seek to achieve?",
+        "context": "Prime ideals are the points of algebro-geometric objects, via the notion of the spectrum of a ring. Arithmetic geometry also benefits from this notion, and many concepts exist in both geometry and number theory. For example, factorization or ramification of prime ideals when lifted to an extension field, a basic problem of algebraic number theory, bears some resemblance with ramification in geomet...",
+        "gold": [],
+        "prediction": "",
+        "f1": 1.0,
+        "score_diff": -12.135
+      },
+      {
+        "id": "5ad570b25b96ef001a10aedc",
+        "question": "What seminal paper is commonly considered the beginning of sociology studies?",
+        "context": "As Fortnow & Homer (2003) point out, the beginning of systematic studies in computational complexity is attributed to the seminal paper \"On the Computational Complexity of Algorithms\" by Juris Hartmanis and Richard Stearns (1965), which laid out the definitions of time and space complexity and proved the hierarchy theorems. Also, in 1965 Edmonds defined a \"good\" algorithm as one with running time ...",
+        "gold": [],
+        "prediction": "",
+        "f1": 1.0,
+        "score_diff": -9.893
+      },
+      {
+        "id": "5ad56d3e5b96ef001a10ae86",
+        "question": "What does not lie between L and P that allows a definitive determination of the relationship between L and P?",
+        "context": "Similarly, it is not known if L (the set of all problems that can be solved in logarithmic space) is strictly contained in P or equal to P. Again, there are many complexity classes between the two, such as NL and NC, and it is not known if they are distinct or equal classes....",
+        "gold": [],
+        "prediction": "",
+        "f1": 1.0,
+        "score_diff": -4.865
+      },
+      {
+        "id": "5ad3c57a604f3c001a3feff5",
+        "question": "Who wrote of the Smeaton water pump in 1751's Philosophical Transactions?",
+        "context": "The first commercial steam-powered device was a water pump, developed in 1698 by Thomas Savery. It used condensing steam to create a vacuum which was used to raise water from below, then it used steam pressure to raise it higher. Small engines were effective though larger models were problematic. They proved only to have a limited lift height and were prone to boiler explosions. It received some u...",
+        "gold": [],
+        "prediction": "",
+        "f1": 1.0,
+        "score_diff": -0.712
+      },
+      {
+        "id": "5a58db973e1742001a15ce50",
+        "question": "Where in the ocean are volcano arcs located?",
+        "context": "The development of plate tectonics provided a physical basis for many observations of the solid Earth. Long linear regions of geologic features could be explained as plate boundaries. Mid-ocean ridges, high regions on the seafloor where hydrothermal vents and volcanoes exist, were explained as divergent boundaries, where two plates move apart. Arcs of volcanoes and earthquakes were explained as co...",
+        "gold": [],
+        "prediction": "",
+        "f1": 1.0,
+        "score_diff": -3.332
+      },
+      {
+        "id": "5a5810c4770dc0001aeeffba",
+        "question": "Why do geologists plot crystals under a microscope?",
+        "context": "Structural geologists use microscopic analysis of oriented thin sections of geologic samples to observe the fabric within the rocks which gives information about strain within the crystalline structure of the rocks. They also plot and combine measurements of geological structures in order to better understand the orientations of faults and folds in order to reconstruct the history of rock deformat...",
+        "gold": [],
+        "prediction": "",
+        "f1": 1.0,
+        "score_diff": -5.133
+      },
+      {
+        "id": "5ad4da795b96ef001a10a3e6",
+        "question": "What commemorates Old Town's heroic history?",
+        "context": "There are also many places commemorating the heroic history of Warsaw. Pawiak, an infamous German Gestapo prison now occupied by a Mausoleum of Memory of Martyrdom and the museum, is only the beginning of a walk in the traces of Heroic City. The Warsaw Citadel, an impressive 19th-century fortification built after the defeat of the November Uprising, was a place of martyr for the Poles. Another imp...",
+        "gold": [],
+        "prediction": "",
+        "f1": 1.0,
+        "score_diff": -1.934
+      },
+      {
+        "id": "5ad568175b96ef001a10ae10",
+        "question": "What is one of the least important open questions in theoretical computer science?",
+        "context": "The question of whether P equals NP is one of the most important open questions in theoretical computer science because of the wide implications of a solution. If the answer is yes, many important problems can be shown to have more efficient solutions. These include various types of integer programming problems in operations research, many problems in logistics, protein structure prediction in bio...",
+        "gold": [],
+        "prediction": "",
+        "f1": 1.0,
+        "score_diff": -17.236
+      }
+    ],
+    "partial_overlap": [
+      {
+        "id": "57300e2604bcaa1900d770ba",
+        "question": "When did the Iranian government enjoy something of a resurgence?",
+        "context": "The Islamic Republic has also maintained its hold on power in Iran in spite of US economic sanctions, and has created or assisted like-minded Shia terrorist groups in Iraq, Egypt, Syria, Jordan (SCIRI) and Lebanon (Hezbollah) (two Muslim countries that also have large Shiite populations). During the 2006 Israel-Lebanon conflict, the Iranian government enjoyed something of a resurgence in popularit...",
+        "gold": [
+          "During the 2006 Israel-Lebanon conflict",
+          "the 2006 Israel-Lebanon conflict",
+          "2006"
+        ],
+        "prediction": "During the 2006",
+        "f1": 0.667,
+        "score_diff": 8.705
+      },
+      {
+        "id": "5725cb33271a42140099d1db",
+        "question": "Jellyfish ans sea anemones belong to what phylum?",
+        "context": "Ctenophores form an animal phylum that is more complex than sponges, about as complex as cnidarians (jellyfish, sea anemones, etc.), and less complex than bilaterians (which include almost all other animals). Unlike sponges, both ctenophores and cnidarians have: cells bound by inter-cell connections and carpet-like basement membranes; muscles; nervous systems; and some have sensory organs. Ctenoph...",
+        "gold": [
+          "cnidarians",
+          "Ctenophores",
+          "cnidarians"
+        ],
+        "prediction": "Ctenophores form an animal phylum that is more complex than sponges, about as complex as cnidarians",
+        "f1": 0.125,
+        "score_diff": 4.248
+      },
+      {
+        "id": "572fd264b2c2fd14005684ab",
+        "question": "What is the minimum amount of time before a bill can go into law?",
+        "context": "Royal assent: After the bill has been passed, the Presiding Officer submits it to the Monarch for royal assent and it becomes an Act of the Scottish Parliament. However he cannot do so until a 4-week period has elapsed, during which the Law Officers of the Scottish Government or UK Government can refer the bill to the Supreme Court of the United Kingdom for a ruling on whether it is within the pow...",
+        "gold": [
+          "a 4-week period",
+          "a 4-week period",
+          "4-week period"
+        ],
+        "prediction": "4-week",
+        "f1": 0.667,
+        "score_diff": 6.041
+      },
+      {
+        "id": "572864542ca10214002da2e2",
+        "question": "Why did the university eventually leave the conference?",
+        "context": "The Maroons compete in the NCAA's Division III as members of the University Athletic Association (UAA). The university was a founding member of the Big Ten Conference and participated in the NCAA Division I Men's Basketball and Football and was a regular participant in the Men's Basketball tournament. In 1935, the University of Chicago reached the Sweet Sixteen. In 1935, Chicago Maroons football p...",
+        "gold": [
+          "Robert Maynard Hutchins de-emphasized varsity athletics",
+          "University President Robert Maynard Hutchins de-emphasized varsity athletics",
+          "University President Robert Maynard Hutchins de-emphasized varsity athletics in 1939"
+        ],
+        "prediction": "University President Robert Maynard Hutchins de-emphasized varsity athletics in 1939 and dropped football",
+        "f1": 0.87,
+        "score_diff": 6.932
+      },
+      {
+        "id": "5725f6e138643c19005acf1b",
+        "question": "In what year did Fresno experience the most rainfall?",
+        "context": "The official record high temperature for Fresno is 115 °F (46.1 °C), set on July 8, 1905, while the official record low is 17 °F (−8 °C), set on January 6, 1913. The average windows for 100 °F (37.8 °C)+, 90 °F (32.2 °C)+, and freezing temperatures are June 1 thru September 13, April 26 thru October 9, and December 10 thru January 28, respectively, and no freeze occurred between in the 1983/1984 s...",
+        "gold": [
+          "1885",
+          "July 1982 to June 1983"
+        ],
+        "prediction": "November 1885",
+        "f1": 0.667,
+        "score_diff": 5.121
+      },
+      {
+        "id": "572908c13f37b31900477fbe",
+        "question": "What cells are the second arm of the innate immune system?",
+        "context": "Leukocytes (white blood cells) act like independent, single-celled organisms and are the second arm of the innate immune system. The innate leukocytes include the phagocytes (macrophages, neutrophils, and dendritic cells), mast cells, eosinophils, basophils, and natural killer cells. These cells identify and eliminate pathogens, either by attacking larger pathogens through contact or by engulfing ...",
+        "gold": [
+          "Leukocytes (white blood cells)",
+          "white blood cells",
+          "white blood cells"
+        ],
+        "prediction": "Leukocytes",
+        "f1": 0.4,
+        "score_diff": 10.656
+      },
+      {
+        "id": "5733314e4776f4190066076e",
+        "question": "Where is the lowest point of Warsaw located?",
+        "context": "Warsaw lies in east-central Poland about 300 km (190 mi) from the Carpathian Mountains and about 260 km (160 mi) from the Baltic Sea, 523 km (325 mi) east of Berlin, Germany. The city straddles the Vistula River. It is located in the heartland of the Masovian Plain, and its average elevation is 100 metres (330 ft) above sea level. The highest point on the left side of the city lies at a height of ...",
+        "gold": [
+          "at the right bank of the Vistula",
+          "at the right bank of the Vistula, by the eastern border of Warsaw",
+          "by the eastern border"
+        ],
+        "prediction": "right bank of the Vistula",
+        "f1": 0.889,
+        "score_diff": 5.557
+      },
+      {
+        "id": "57268527708984140094c8c2",
+        "question": "What was the main idea of James Hutton's paper?",
+        "context": "James Hutton is often viewed as the first modern geologist. In 1785 he presented a paper entitled Theory of the Earth to the Royal Society of Edinburgh. In his paper, he explained his theory that the Earth must be much older than had previously been supposed in order to allow enough time for mountains to be eroded and for sediments to form new rocks at the bottom of the sea, which in turn were rai...",
+        "gold": [
+          "Earth must be much older than had previously been supposed",
+          "Earth must be much older than had previously been supposed",
+          "the Earth must be much older than had previously been supposed"
+        ],
+        "prediction": "Theory of the Earth",
+        "f1": 0.154,
+        "score_diff": 5.916
+      }
+    ],
+    "wrong_span": [
+      {
+        "id": "56de179dcffd8e1900b4b5db",
+        "question": "What country did the Normans invade in 1169?",
+        "context": "The Normans had a profound effect on Irish culture and history after their invasion at Bannow Bay in 1169. Initially the Normans maintained a distinct culture and ethnicity. Yet, with time, they came to be subsumed into Irish culture to the point that it has been said that they became \"more Irish than the Irish themselves.\" The Normans settled mostly in an area in the east of Ireland, later known ...",
+        "gold": [
+          "Ireland",
+          "Ireland",
+          "Ireland"
+        ],
+        "prediction": "Irish",
+        "f1": 0.0,
+        "score_diff": 1.246
+      },
+      {
+        "id": "57332a734776f41900660728",
+        "question": "Whose army liberated Warsaw in 1806?",
+        "context": "Warsaw remained the capital of the Polish–Lithuanian Commonwealth until 1796, when it was annexed by the Kingdom of Prussia to become the capital of the province of South Prussia. Liberated by Napoleon's army in 1806, Warsaw was made the capital of the newly created Duchy of Warsaw. Following the Congress of Vienna of 1815, Warsaw became the centre of the Congress Poland, a constitutional monarchy...",
+        "gold": [
+          "Napoleon's",
+          "Napoleon's",
+          "Napoleon's"
+        ],
+        "prediction": "Napoleon",
+        "f1": 0.0,
+        "score_diff": 7.436
+      },
+      {
+        "id": "571a50df4faf5e1900b8a961",
+        "question": "Combustion is caused by an oxidant and a fuel. What role does oxygen play in combustion?",
+        "context": "Highly concentrated sources of oxygen promote rapid combustion. Fire and explosion hazards exist when concentrated oxidants and fuels are brought into close proximity; an ignition event, such as heat or a spark, is needed to trigger combustion. Oxygen is the oxidant, not the fuel, but nevertheless the source of most of the chemical energy released in combustion. Combustion hazards also apply to co...",
+        "gold": [
+          "Oxygen is the oxidant",
+          "the oxidant",
+          "oxidant",
+          "oxidant",
+          "oxidant"
+        ],
+        "prediction": "the source of most of the chemical energy",
+        "f1": 0.0,
+        "score_diff": 5.378
+      },
+      {
+        "id": "5730069004bcaa1900d7702f",
+        "question": "Where does the Ijssel branch flow?",
+        "context": "At present, the branches Waal and Nederrijn-Lek discharge to the North Sea, through the former Meuse estuary, near Rotterdam. The river IJssel branch flows to the north and enters the IJsselmeer, formerly the Zuider Zee brackish lagoon; however, since 1932, a freshwater lake. The discharge of the Rhine is divided among three branches: the River Waal (6/9 of total discharge), the River Nederrijn – ...",
+        "gold": [
+          "IJsselmeer",
+          "IJsselmeer",
+          "IJsselmeer",
+          "IJsselmeer"
+        ],
+        "prediction": "to the north",
+        "f1": 0.0,
+        "score_diff": 4.941
+      },
+      {
+        "id": "5728dc2d3acd2414000e0083",
+        "question": "What public entity of learning is often target of civil disobedience?",
+        "context": "Some theories of civil disobedience hold that civil disobedience is only justified against governmental entities. Brownlee argues that disobedience in opposition to the decisions of non-governmental agencies such as trade unions, banks, and private universities can be justified if it reflects \"a larger challenge to the legal system that permits those decisions to be taken\". The same principle, she...",
+        "gold": [
+          "universities",
+          "private universities",
+          "private universities",
+          "private universities",
+          "private universities"
+        ],
+        "prediction": "governmental",
+        "f1": 0.0,
+        "score_diff": 0.199
+      },
+      {
+        "id": "57264a74708984140094c18f",
+        "question": "Did the plague spread in Scandinavia or Germany first?",
+        "context": "Gasquet (1908) claimed that the Latin name atra mors (Black Death) for the 14th-century epidemic first appeared in modern times in 1631 in a book on Danish history by J.I. Pontanus: \"Vulgo & ab effectu atram mortem vocatibant. (\"Commonly and from its effects, they called it the black death\"). The name spread through Scandinavia and then Germany, gradually becoming attached to the mid 14th-century ...",
+        "gold": [
+          "Scandinavia",
+          "Scandinavia",
+          "Scandinavia"
+        ],
+        "prediction": "Germany",
+        "f1": 0.0,
+        "score_diff": 3.072
+      },
+      {
+        "id": "5725c0f289a1e219009abdf3",
+        "question": "What does the ctenophora use to swim?",
+        "context": "Ctenophora (/tᵻˈnɒfərə/; singular ctenophore, /ˈtɛnəfɔːr/ or /ˈtiːnəfɔːr/; from the Greek κτείς kteis 'comb' and φέρω pherō 'carry'; commonly known as comb jellies) is a phylum of animals that live in marine waters worldwide. Their most distinctive feature is the ‘combs’ – groups of cilia which they use for swimming – they are the largest animals that swim by means of cilia. Adults of various spec...",
+        "gold": [
+          "‘combs’ – groups of cilia",
+          "cilia",
+          "cilia"
+        ],
+        "prediction": "combs",
+        "f1": 0.0,
+        "score_diff": 6.832
+      },
+      {
+        "id": "571a4d1a4faf5e1900b8a959",
+        "question": "What was the occupation of Joseph Priestley?",
+        "context": "In the meantime, on August 1, 1774, an experiment conducted by the British clergyman Joseph Priestley focused sunlight on mercuric oxide (HgO) inside a glass tube, which liberated a gas he named \"dephlogisticated air\". He noted that candles burned brighter in the gas and that a mouse was more active and lived longer while breathing it. After breathing the gas himself, he wrote: \"The feeling of it ...",
+        "gold": [
+          "clergyman",
+          "clergyman",
+          "clergyman",
+          "clergyman",
+          "clergyman"
+        ],
+        "prediction": "British clergy",
+        "f1": 0.0,
+        "score_diff": 5.697
+      }
+    ],
+    "false_negative": [
+      {
+        "id": "57265d86f1498d1400e8dd54",
+        "question": "What does the beroida have instead of feeding appendages?",
+        "context": "The Beroida, also known as Nuda, have no feeding appendages, but their large pharynx, just inside the large mouth and filling most of the saclike body, bears \"macrocilia\" at the oral end. These fused bundles of several thousand large cilia are able to \"bite\" off pieces of prey that are too large to swallow whole – almost always other ctenophores. In front of the field of macrocilia, on the mouth \"...",
+        "gold": [
+          "large pharynx",
+          "large cilia",
+          "\"macrocilia\""
+        ],
+        "prediction": "",
+        "f1": 0.0,
+        "score_diff": -2.247
+      },
+      {
+        "id": "5728fd3c3f37b31900477f2e",
+        "question": "Who decides the fate of protesters most of the time?",
+        "context": "Along with giving the offender his \"just deserts\", achieving crime control via incapacitation and deterrence is a major goal of criminal punishment. Brownlee argues, \"Bringing in deterrence at the level of justification detracts from the law’s engagement in a moral dialogue with the offender as a rational person because it focuses attention on the threat of punishment and not the moral reasons to ...",
+        "gold": [
+          "the state",
+          "judges",
+          "the state (including the judges)",
+          "the judges",
+          "judges"
+        ],
+        "prediction": "",
+        "f1": 0.0,
+        "score_diff": -5.138
+      },
+      {
+        "id": "5710f114a58dae1900cd6b60",
+        "question": "What English law made that country more welcoming to Huguenots?",
+        "context": "Both before and after the 1708 passage of the Foreign Protestants Naturalization Act, an estimated 50,000 Protestant Walloons and Huguenots fled to England, with many moving on to Ireland and elsewhere. In relative terms, this was one of the largest waves of immigration ever of a single ethnic community to Britain. Andrew Lortie (born André Lortie), a leading Huguenot theologian and writer who led...",
+        "gold": [
+          "Foreign Protestants Naturalization Act",
+          "Foreign Protestants Naturalization Act,",
+          "Foreign Protestants Naturalization Act"
+        ],
+        "prediction": "",
+        "f1": 0.0,
+        "score_diff": -0.012
+      },
+      {
+        "id": "57109275b654c5140001f9a0",
+        "question": "What was the name of France's primary colony in the New World?",
+        "context": "The exodus of Huguenots from France created a brain drain, as many Huguenots had occupied important places in society. The kingdom did not fully recover for years. The French crown's refusal to allow non-Catholics to settle in New France may help to explain that colony's slow rate of population growth compared to that of the neighbouring British colonies, which opened settlement to religious disse...",
+        "gold": [
+          "New France",
+          "New France",
+          "New France"
+        ],
+        "prediction": "",
+        "f1": 0.0,
+        "score_diff": -3.195
+      },
+      {
+        "id": "5727ea45ff5b5019007d986e",
+        "question": "What pushes businesses to increase pressures on workers?",
+        "context": "In Marxian analysis, capitalist firms increasingly substitute capital equipment for labor inputs (workers) under competitive pressure to reduce costs and maximize profits. Over the long-term, this trend increases the organic composition of capital, meaning that less workers are required in proportion to capital inputs, increasing unemployment (the \"reserve army of labour\"). This process exerts a d...",
+        "gold": [
+          "reduce costs and maximize profits",
+          "substitution of capital equipment for labor",
+          "pressure to reduce costs and maximize profits"
+        ],
+        "prediction": "",
+        "f1": 0.0,
+        "score_diff": -5.459
+      },
+      {
+        "id": "571099b2b654c5140001f9b7",
+        "question": "What other Northern European cities had Huguenot congregations?",
+        "context": "In Berlin, the Huguenots created two new neighbourhoods: Dorotheenstadt and Friedrichstadt. By 1700, one-fifth of the city's population was French speaking. The Berlin Huguenots preserved the French language in their church services for nearly a century. They ultimately decided to switch to German in protest against the occupation of Prussia by Napoleon in 1806-07. Many of their descendents rose t...",
+        "gold": [
+          "Fredericia (Denmark), Berlin, Stockholm, Hamburg, Frankfurt, Helsinki, and Emden",
+          "Fredericia (Denmark), Berlin, Stockholm, Hamburg, Frankfurt, Helsinki, and Emden",
+          "Fredericia (Denmark), Berlin, Stockholm, Hamburg, Frankfurt, Helsinki, and Emden"
+        ],
+        "prediction": "",
+        "f1": 0.0,
+        "score_diff": -0.615
+      },
+      {
+        "id": "5727c69d3acd2414000dec15",
+        "question": "What was the trend of female student population from 1970s and deyond?",
+        "context": "Women remained segregated at Radcliffe, though more and more took Harvard classes. Nonetheless, Harvard's undergraduate population remained predominantly male, with about four men attending Harvard College for every woman studying at Radcliffe. Following the merger of Harvard and Radcliffe admissions in 1977, the proportion of female undergraduates steadily increased, mirroring a trend throughout ...",
+        "gold": [
+          "the proportion of female undergraduates steadily increased, mirroring a trend throughout higher education in the United States",
+          "steadily increased",
+          "increased"
+        ],
+        "prediction": "",
+        "f1": 0.0,
+        "score_diff": -3.506
+      },
+      {
+        "id": "57274712708984140094dbae",
+        "question": "What are private schools that charge no tuition called?",
+        "context": "In the United Kingdom and several other Commonwealth countries including Australia and Canada, the use of the term is generally restricted to primary and secondary educational levels; it is almost never used of universities and other tertiary institutions. Private education in North America covers the whole gamut of educational activity, ranging from pre-school to tertiary level institutions. Annu...",
+        "gold": [
+          "'tuition-free",
+          "tuition-free",
+          "tuition-free"
+        ],
+        "prediction": "",
+        "f1": 0.0,
+        "score_diff": -0.043
+      }
+    ],
+    "false_positive": [
+      {
+        "id": "5ad4cc135b96ef001a10a0f3",
+        "question": "Why did the exiled Polish government in London order the underground Home Army to seize control of Stalin prior to the arrival or the Red Army?",
+        "context": "By July 1944, the Red Army was deep into Polish territory and pursuing the Germans toward Warsaw. Knowing that Stalin was hostile to the idea of an independent Poland, the Polish government-in-exile in London gave orders to the underground Home Army (AK) to try to seize control of Warsaw from the Germans before the Red Army arrived. Thus, on 1 August 1944, as the Red Army was nearing the city, the...",
+        "gold": [],
+        "prediction": "Stalin was hostile to the idea of an independent Poland",
+        "f1": 0.0,
+        "score_diff": 3.723
+      },
+      {
+        "id": "5a7b3f0f21c2de001afe9e02",
+        "question": "What percentage of households had children over the age of 18?",
+        "context": "There were 158,349 households, of which 68,511 (43.3%) had children under the age of 18 living in them, 69,284 (43.8%) were opposite-sex married couples living together, 30,547 (19.3%) had a female householder with no husband present, 11,698 (7.4%) had a male householder with no wife present. There were 12,843 (8.1%) unmarried opposite-sex partnerships, and 1,388 (0.9%) same-sex married couples or...",
+        "gold": [],
+        "prediction": "68,511 (43.3%)",
+        "f1": 0.0,
+        "score_diff": 2.385
+      },
+      {
+        "id": "5ad03d2277cf76001a686ecf",
+        "question": "What does the UGSS California Earthquake forecast model?",
+        "context": "Many faults are able to produce a magnitude 6.7+ earthquake, such as the San Andreas Fault, which can produce a magnitude 8.0 event. Other faults include the San Jacinto Fault, the Puente Hills Fault, and the Elsinore Fault Zone. The USGS has released a California Earthquake forecast which models Earthquake occurrence in California....",
+        "gold": [],
+        "prediction": "Earthquake occurrence",
+        "f1": 0.0,
+        "score_diff": 0.663
+      },
+      {
+        "id": "5acfac7177cf76001a6857f8",
+        "question": "Who is the current CEO and chairmen of Goldman Sachs?",
+        "context": "Current faculty include the anthropologist Marshall Sahlins, historian Dipesh Chakrabarty, paleontologists Neil Shubin and Paul Sereno, evolutionary biologist Jerry Coyne, Nobel prize winning physicist Yoichiro Nambu, Nobel prize winning physicist James Cronin, Nobel Prize winning economists Eugene Fama, James Heckman, Lars Peter Hansen, Roger Myerson and Robert Lucas, Jr., Freakonomics author and...",
+        "gold": [],
+        "prediction": "Hank Paulson",
+        "f1": 0.0,
+        "score_diff": 3.682
+      },
+      {
+        "id": "5ad2741ed7d075001a4294d4",
+        "question": "What is the major tributary of Lake Constance?",
+        "context": "The Rhine emerges from Lake Constance, flows generally westward, as the Hochrhein, passes the Rhine Falls, and is joined by its major tributary, the river Aare. The Aare more than doubles the Rhine's water discharge, to an average of nearly 1,000 m3/s (35,000 cu ft/s), and provides more than a fifth of the discharge at the Dutch border. The Aare also contains the waters from the 4,274 m (14,022 ft...",
+        "gold": [],
+        "prediction": "Aare",
+        "f1": 0.0,
+        "score_diff": 1.449
+      },
+      {
+        "id": "5ad418fb604f3c001a400435",
+        "question": "What is stainless steel's theoretical Carnot efficiency?",
+        "context": "The efficiency of a Rankine cycle is usually limited by the working fluid. Without the pressure reaching supercritical levels for the working fluid, the temperature range the cycle can operate over is quite small; in steam turbines, turbine entry temperatures are typically 565 °C (the creep limit of stainless steel) and condenser temperatures are around 30 °C. This gives a theoretical Carnot effic...",
+        "gold": [],
+        "prediction": "63%",
+        "f1": 0.0,
+        "score_diff": 8.166
+      },
+      {
+        "id": "5a6787d4f038b7001ab0c27b",
+        "question": "What kind of taxation funds private schools?",
+        "context": "Private schools, also known as independent schools, non-governmental, or nonstate schools, are not administered by local, state or national governments; thus, they retain the right to select their students and are funded in whole or in part by charging their students tuition, rather than relying on mandatory taxation through public (government) funding; at some private schools students may be able...",
+        "gold": [],
+        "prediction": "mandatory taxation",
+        "f1": 0.0,
+        "score_diff": 1.965
+      },
+      {
+        "id": "5a6394b768151a001a922397",
+        "question": "What is the snowiest peak in Victoria?",
+        "context": "Victoria contains many topographically, geologically and climatically diverse areas, ranging from the wet, temperate climate of Gippsland in the southeast to the snow-covered Victorian alpine areas which rise to almost 2,000 m (6,600 ft), with Mount Bogong the highest peak at 1,986 m (6,516 ft). There are extensive semi-arid plains to the west and northwest. There is an extensive series of river s...",
+        "gold": [],
+        "prediction": "Mount Bogong",
+        "f1": 0.0,
+        "score_diff": 1.422
+      }
+    ]
+  }
+}

@@ -23,13 +23,20 @@ ENV/
 # Jupyter
 .ipynb_checkpoints/
 *.ipynb
+!experiments/roberta/pipeline/*.ipynb
 
 # Model weights (son demasiado grandes para GitHub, usa HuggingFace Hub si los subes)
 modernbert-base-squad2/
+modernbert-base-squad2-final/
+roberta-base-squad2-final/
+modelo_guardado/
+distilbert-base-uncased-squad2/
+checkpoints/
 *.safetensors
 *.bin
 *.pt
 *.ckpt
+
 # Pero SÍ queremos config.json y tokenizer del modelo:
 !modernbert-base-squad2-final/config.json
 !modernbert-base-squad2-final/tokenizer*.json
@@ -48,9 +55,6 @@ modernbert-base-squad2/
 !logs/error_analysis.json
 !logs/eda_squad2.png
 !logs/eda_stats.json
-
-# Logs ModernBERT
-!logs_modernBert/**
 
 # OS
 .DS_Store
