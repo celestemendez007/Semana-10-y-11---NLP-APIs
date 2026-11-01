@@ -128,11 +128,18 @@ El evaluador se comunicará con el servicio mediante un túnel público HTTPS:
 
 ```bash
 # Opción A: Cloudflare Quick Tunnel (sin registro, recomendado)
+# En Linux/macOS:
 cloudflared tunnel --url http://localhost:8000
+
+# En Windows (PowerShell con el ejecutable local):
+.\cloudflared.exe tunnel --url http://localhost:8000
 
 # Opción B: ngrok (de respaldo)
 ngrok http 8000
 ```
+
+> **Documentación Interactiva (Swagger UI):**  
+> Una vez levantado el servidor y el túnel, puedes acceder a la interfaz gráfica interactiva visitando la ruta `/docs` en el navegador (por ejemplo: `https://<tu-subdominio>.trycloudflare.com/docs`). Desde allí puedes autorizarte usando el botón **Authorize** (ingresando el token configurado) y probar los endpoints `/health`, `/info` y `/predict` directamente en el navegador.
 
 ---
 
