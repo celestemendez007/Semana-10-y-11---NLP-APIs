@@ -117,6 +117,16 @@ def verify_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(s
 # ──────────────────────────────────────────────────────────────
 # Schemas
 # ──────────────────────────────────────────────────────────────
+class HealthResponse(BaseModel):
+    status: str = Field(..., description="ok or loading")
+
+class InfoResponse(BaseModel):
+    team:           str = Field(..., description="Team name registered with instructor")
+    model:          str = Field(..., description="Hugging Face model checkpoint ID")
+    params:         int = Field(..., description="Total model parameters")
+    max_seq_length: Optional[int] = Field(None, description="Maximum tokens per window")
+    doc_stride:     Optional[int] = Field(None, description="Overlap between sliding windows")
+
 class PredictRequest(BaseModel):
     id:       str = Field(..., min_length=1, max_length=64)
     context:  str = Field(..., min_length=1, max_length=5000)
@@ -131,7 +141,7 @@ class PredictResponse(BaseModel):
 # ──────────────────────────────────────────────────────────────
 # Endpoints
 # ──────────────────────────────────────────────────────────────
-@app.get("/health", tags=["public"])
+@app.get("/health", response_model=HealthResponse, tags=["public"])
 def health():
     """Liveness check — no requiere token."""
     if model_state["ready"]:
@@ -139,7 +149,7 @@ def health():
     return JSONResponse(status_code=503, content={"status": "loading"})
 
 
-@app.get("/info", tags=["protected"], dependencies=[Depends(verify_token)])
+@app.get("/info", response_model=InfoResponse, tags=["protected"], dependencies=[Depends(verify_token)])
 def info():
     """Metadata del equipo y del modelo."""
     return {
