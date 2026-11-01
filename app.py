@@ -42,7 +42,7 @@ DOC_STRIDE       = int(os.getenv("DOC_STRIDE", "128"))
 MAX_ANSWER_LEN   = 30
 N_BEST           = 20
 NULL_THRESHOLD   = float(os.getenv("NULL_THRESHOLD", "0.0"))  # calibrar en validation set
-TEAM_NAME        = os.getenv("TEAM_NAME", "team-XX")           # cambiar al nombre del equipo
+TEAM_NAME        = os.getenv("TEAM_NAME", "team-03")           
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
