@@ -64,3 +64,8 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Executables
+*.exe
+cloudflared.exe
+*.zip
