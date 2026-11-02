@@ -8,7 +8,7 @@
 | Members | Celeste Méndez, Fabiola Guardado, Eduardo Torruella, Arlette González |
 | Repository URL | https://github.com/celestemendez007/Semana-10-y-11---NLP-APIs.git |
 | `submission` commit hash | *Tagged at `submission`* |
-| Public service URL used at the dry run | https://win-grab-florence-hearings.trycloudflare.com (Cloudflare Quick Tunnel) |
+| Public service URL used at the dry run | https://hollywood-housing-grip-latter.trycloudflare.com (Cloudflare Quick Tunnel — documented in DRY_RUN.md) |
 | AI tools used (which, and for what) | Antigravity AI Agent (pipeline architecture, memory optimization, contract validation, benchmark comparison) |
 
 ---

@@ -20,8 +20,9 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Depends, status, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, Depends, status, Request, Body
+from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
+from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.exceptions import RequestValidationError
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
@@ -42,7 +43,7 @@ DOC_STRIDE       = int(os.getenv("DOC_STRIDE", "128"))
 MAX_ANSWER_LEN   = 30
 N_BEST           = 20
 NULL_THRESHOLD   = float(os.getenv("NULL_THRESHOLD", "0.0"))  # calibrar en validation set
-TEAM_NAME        = os.getenv("TEAM_NAME", "team-03")           
+TEAM_NAME        = os.getenv("TEAM_NAME", "team-03")           # nombre del equipo registrado
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -79,19 +80,104 @@ async def lifespan(app: FastAPI):
 # ──────────────────────────────────────────────────────────────
 # App FastAPI
 # ──────────────────────────────────────────────────────────────
+API_DESCRIPTION = f"""
+Extractive Question Answering over English paragraphs, SQuAD 2.0 style: the service returns the
+answer **copied verbatim from the context**, or `null` when the context does not contain it.
+
+| | |
+|---|---|
+| **Model** | `answerdotai/ModernBERT-base`, fine-tuned on SQuAD 2.0 |
+| **Long contexts** | sliding windows of {MAX_SEQ_LENGTH} tokens, stride {DOC_STRIDE} |
+| **Team** | {TEAM_NAME} |
+
+**How to try it**
+1. Click **Authorize** and paste the token (only the token, without the word `Bearer`).
+2. Open **POST /predict** → **Try it out**, pick an example and click **Execute**.
+
+`/health` is public. `/info` and `/predict` need the token.
+"""
+
+TAGS_METADATA = [
+    {"name": "Public", "description": "No token needed."},
+    {"name": "Protected", "description": "Need `Authorization: Bearer <token>`."},
+]
+
 app = FastAPI(
     title="Extractive QA Service",
+    summary=f"{TEAM_NAME} · Question Answering API",
+    description=API_DESCRIPTION,
     version="1.0",
+    openapi_tags=TAGS_METADATA,
+    docs_url=None,        # /docs se sirve abajo con un estilo propio
+    redoc_url=None,
     lifespan=lifespan,
 )
+
+# ── Interfaz /docs (solo estilo; no cambia el comportamiento de la API) ──────
+DOCS_CSS = """
+<style>
+  body { background: #f6f7fb; margin: 0; }
+  .swagger-ui, .swagger-ui .info .title, .swagger-ui .opblock-tag, .swagger-ui .opblock .opblock-summary-path {
+    font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif !important;
+  }
+  .swagger-ui .topbar { display: none; }
+  .swagger-ui .wrapper { max-width: 960px; padding: 0 20px; }
+  .swagger-ui .information-container.wrapper {
+    background: linear-gradient(135deg, #1f2a5a 0%, #3b4fb8 100%);
+    color: #fff; border-radius: 0 0 16px 16px; padding: 28px 32px 22px; margin-bottom: 24px;
+  }
+  .swagger-ui .info { margin: 0; }
+  .swagger-ui .info .title, .swagger-ui .info p, .swagger-ui .info li, .swagger-ui .info td,
+  .swagger-ui .info strong, .swagger-ui .info h2 { color: #fff !important; }
+  .swagger-ui .info .title small { background: rgba(255,255,255,.18) !important; }
+  .swagger-ui .info .title small.version-stamp { background: #22c55e !important; }
+  .swagger-ui .info code { background: rgba(255,255,255,.16); color: #fff; padding: 1px 6px; border-radius: 4px; }
+  .swagger-ui .info table { margin: 10px 0 4px; border-collapse: collapse; }
+  .swagger-ui .info td { padding: 3px 18px 3px 0; border: 0; vertical-align: top; }
+  .swagger-ui .info td p { margin: 0; }
+  .swagger-ui .info thead { display: none; }
+  .swagger-ui .info a.link, .swagger-ui .info .info__contact, .swagger-ui .info hgroup a { display: none; }
+  .swagger-ui .scheme-container { background: transparent; box-shadow: none; padding: 0 0 8px; }
+  .swagger-ui .btn.authorize { border-radius: 8px; border-color: #3b4fb8; color: #3b4fb8; background: #fff; }
+  .swagger-ui .btn.authorize svg { fill: #3b4fb8; }
+  .swagger-ui .opblock-tag { border-bottom: 1px solid #e3e6ef; font-size: 18px; }
+  .swagger-ui .opblock { border-radius: 10px; box-shadow: 0 1px 3px rgba(20,30,70,.06); margin-bottom: 12px; }
+  .swagger-ui .opblock .opblock-summary { border-radius: 10px; }
+  .swagger-ui .btn.execute { background: #3b4fb8; border-color: #3b4fb8; border-radius: 8px; }
+  .swagger-ui section.models { display: none; }
+</style>
+"""
+
+@app.get("/docs", include_in_schema=False)
+def custom_docs() -> HTMLResponse:
+    html = get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=f"Extractive QA Service · {TEAM_NAME}",
+        swagger_ui_parameters={
+            "defaultModelsExpandDepth": -1,   # oculta la sección "Schemas"
+            "docExpansion": "list",
+            "tryItOutEnabled": True,
+            "displayRequestDuration": True,
+            "persistAuthorization": True,
+            "syntaxHighlight": {"theme": "monokai"},
+        },
+    )
+    page = html.body.decode("utf-8").replace("</head>", DOCS_CSS + "</head>")
+    return HTMLResponse(page)
+
+@app.get("/", include_in_schema=False)
+def root():
+    """La raíz abre directamente la interfaz."""
+    return RedirectResponse(url="/docs")
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     """Garantiza que todas las respuestas de error cumplan el esquema de qa_api_contract.yaml."""
+    headers = getattr(exc, "headers", None)   # conserva WWW-Authenticate: Bearer en los 401
     if isinstance(exc.detail, dict) and "error" in exc.detail:
-        return JSONResponse(status_code=exc.status_code, content=exc.detail)
+        return JSONResponse(status_code=exc.status_code, content=exc.detail, headers=headers)
     error_code = "unauthorized" if exc.status_code == 401 else ("bad_request" if exc.status_code in (400, 422) else "internal_error")
-    return JSONResponse(status_code=exc.status_code, content={"error": error_code, "detail": str(exc.detail)})
+    return JSONResponse(status_code=exc.status_code, content={"error": error_code, "detail": str(exc.detail)}, headers=headers)
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -128,9 +214,9 @@ class InfoResponse(BaseModel):
     doc_stride:     Optional[int] = Field(None, description="Overlap between sliding windows")
 
 class PredictRequest(BaseModel):
-    id:       str = Field(..., min_length=1, max_length=64)
-    context:  str = Field(..., min_length=1, max_length=5000)
-    question: str = Field(..., min_length=1, max_length=500)
+    id:       str = Field(..., min_length=1, max_length=64, description="Item id, echoed back unchanged.")
+    context:  str = Field(..., min_length=1, max_length=5000, description="English paragraph (max 5000 chars).")
+    question: str = Field(..., min_length=1, max_length=500, description="English question (max 500 chars).")
 
 class PredictResponse(BaseModel):
     id:     str
@@ -138,20 +224,32 @@ class PredictResponse(BaseModel):
     start:  Optional[int]
     score:  float
 
+    model_config = {"json_schema_extra": {"examples": [{"id": "q-017", "answer": "422 km", "start": 67, "score": 0.9887}]}}
+
+class ErrorResponse(BaseModel):
+    error:  str = Field(..., description="unauthorized, bad_request or internal_error")
+    detail: Optional[str] = None
+
+ERR_401 = {401: {"model": ErrorResponse, "description": "Missing or invalid token",
+                 "content": {"application/json": {"example": {"error": "unauthorized"}}}}}
+ERR_422 = {422: {"model": ErrorResponse, "description": "Invalid request body",
+                 "content": {"application/json": {"example": {"error": "bad_request", "detail": "field 'question' is required"}}}}}
+
 # ──────────────────────────────────────────────────────────────
 # Endpoints
 # ──────────────────────────────────────────────────────────────
-@app.get("/health", response_model=HealthResponse, tags=["public"])
+@app.get("/health", response_model=HealthResponse, tags=["Public"], summary="Is the service ready?")
 def health():
-    """Liveness check — no requiere token."""
+    """`ok` when the model is loaded and `/predict` can answer; `loading` (503) while it starts."""
     if model_state["ready"]:
         return {"status": "ok"}
     return JSONResponse(status_code=503, content={"status": "loading"})
 
 
-@app.get("/info", response_model=InfoResponse, tags=["protected"], dependencies=[Depends(verify_token)])
+@app.get("/info", response_model=InfoResponse, tags=["Protected"], summary="Team and model",
+         responses=ERR_401, dependencies=[Depends(verify_token)])
 def info():
-    """Metadata del equipo y del modelo."""
+    """Team name, base checkpoint and number of parameters of the served model."""
     return {
         "team":           TEAM_NAME,
         "model":          "answerdotai/ModernBERT-base",
@@ -161,10 +259,25 @@ def info():
     }
 
 
-@app.post("/predict", response_model=PredictResponse,
-          tags=["protected"], dependencies=[Depends(verify_token)])
-def predict(req: PredictRequest):
-    """Responde una pregunta sobre un contexto usando el modelo fine-tuned."""
+LEMPA = ("The Lempa River is the longest river in El Salvador, flowing about 422 km "
+         "from Guatemala to the Pacific Ocean.")
+PREDICT_EXAMPLES = {
+    "answerable": {
+        "summary": "Answerable question",
+        "value": {"id": "q-017", "context": LEMPA, "question": "How long is the Lempa River?"},
+    },
+    "unanswerable": {
+        "summary": "Unanswerable (trick) question → answer: null",
+        "value": {"id": "q-018", "context": LEMPA, "question": "When was the first dam built on the Lempa River?"},
+    },
+}
+
+@app.post("/predict", response_model=PredictResponse, tags=["Protected"],
+          summary="Answer a question about a context",
+          responses={**ERR_401, **ERR_422}, dependencies=[Depends(verify_token)])
+def predict(req: PredictRequest = Body(..., openapi_examples=PREDICT_EXAMPLES)):
+    """Returns the answer span copied from `context` (with its character offset `start`),
+    or `answer: null` and `start: null` when the context does not answer the question."""
     if not model_state["ready"]:
         raise HTTPException(status_code=503, detail={"error": "internal_error",
                                                       "detail": "Model not ready"})

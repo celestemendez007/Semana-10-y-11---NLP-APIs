@@ -44,6 +44,7 @@ Semana-10-y-11---NLP-APIs/
 ├── public_sample.json          # Set público de 5 casos de prueba distribuido con la guía
 ├── requirements.txt            # Dependencias de producción y entrenamiento del modelo ganador
 ├── REPORT.md                   # Reporte técnico oficial completo (según REPORT_TEMPLATE.md)
+├── DRY_RUN.md                  # Evidencia y capturas de la prueba en vivo (Sección XI)
 ├── README.md                   # Esta documentación
 │
 ├── pipeline/                   # Pipeline reproducible de ModernBERT-base
