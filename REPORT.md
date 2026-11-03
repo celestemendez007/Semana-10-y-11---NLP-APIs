@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Team id | `team-03` |
-| Members | Celeste Méndez, Fabiola Guardado, Eduardo Torruella, Arlette González |
+| Members | Celeste Méndez, Fabiola Guardado, Eduardo Torruella, Arlette Catalán |
 | Repository URL | https://github.com/celestemendez007/Semana-10-y-11---NLP-APIs.git |
 | `submission` commit hash | *Tagged at `submission`* |
 | Public service URL used at the dry run | https://hollywood-housing-grip-latter.trycloudflare.com (Cloudflare Quick Tunnel — documented in DRY_RUN.md) |

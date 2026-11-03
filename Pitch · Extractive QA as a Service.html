@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pitch · Extractive QA as a Service · team-03</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  html,body{margin:0;height:100%;background:#0b1118;overflow:hidden;font-family:'DM Sans',Arial,sans-serif}
+  *{box-sizing:border-box}
+  .stage{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0}
+  .frame{width:1920px;height:1080px}
+  .frame[hidden]{display:none}
+  section.slide{position:relative;width:1920px;height:1080px;overflow:hidden}
+  section.slide *{margin:0}
+  section.slide table{border-collapse:collapse}
+  section.slide th,section.slide td{text-align:left;padding:12px 20px;border-bottom:1px solid rgba(127,127,127,.28)}
+  .bar{position:fixed;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:14px;padding:10px;background:rgba(11,17,24,.92);color:#e8edf2;font-size:15px;z-index:5}
+  .bar button{background:#1e3248;color:#e8edf2;border:1px solid #31475f;border-radius:8px;padding:6px 14px;font:inherit;cursor:pointer}
+  .bar button:hover{background:#2a4562}
+  .bar button:focus-visible{outline:3px solid #9db4ff}
+  .bar .hint{opacity:.65}
+  #notes{position:fixed;left:0;right:0;bottom:48px;max-height:38vh;overflow:auto;background:#fffdf8;color:#12202f;padding:16px 24px;font-size:17px;line-height:1.5;border-top:4px solid #0b6672;display:none;z-index:4}
+  #notes.on{display:block}
+  @media print{
+    @page{size:1920px 1080px;margin:0}
+    html,body{overflow:visible;height:auto;background:#fff}
+    .stage{position:static;transform:none!important;width:auto;height:auto}
+    .frame,.frame[hidden]{display:block!important;page-break-after:always;break-after:page}
+    .bar,#notes{display:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+
+<!-- ==================== SLIDE 1: PORTADA ==================== -->
+<div class="frame" id="f-1" hidden>
+<section class="slide" id="s-1" style="background:#12202F;color:#F5F2EA;padding:120px 128px;display:flex;flex-direction:column;justify-content:space-between">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <p style="font-size:26px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#F2B84B">Pitch Oficial · NLP y APIs</p>
+    <div style="background:#1E3248;color:#F2B84B;font-size:22px;font-weight:700;padding:8px 24px;border-radius:9999px;border:1px solid #31475F">team-03 · ModernBERT-base</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:28px">
+    <h1 style="font-size:104px;font-weight:700;line-height:1.05">Extractive QA<br>as a Service</h1>
+    <p style="font-size:38px;line-height:1.35;color:#C9D3DD;max-width:1400px">
+      Un encoder afinado en SQuAD 2.0 que responde con el fragmento exacto del texto, o se abstiene diciendo «no sé».
+    </p>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:flex-end">
+    <div>
+      <p style="font-size:26px;color:#F5F2EA;font-weight:700;margin-bottom:6px">Integrantes del Equipo</p>
+      <p style="font-size:24px;color:#C9D3DD">Celeste Méndez · Fabiola Guardado · Eduardo Torruella · Arlette Catalán</p>
+    </div>
+    <div style="text-align:right">
+      <p style="font-size:22px;color:#8B98A5">Tag de Entrega: <span style="font-family:'JetBrains Mono',monospace;color:#F2B84B">submission</span></p>
+    </div>
+  </div>
+</section>
+</div>
+
+<!-- ==================== SLIDE 2: CRITERIO 1 — ELECCIÓN DE MODELO ==================== -->
+<div class="frame" id="f-2" hidden>
+<section class="slide" id="s-2" style="background:#F5F2EA;color:#12202F;padding:100px 128px 140px;display:flex;flex-direction:column;gap:36px">
+  <div>
+    <p style="font-size:22px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#0B6672;margin-bottom:8px">Criterio 1 · Elección de Modelo y Justificación</p>
+    <h2 style="font-size:52px;font-weight:700;line-height:1.1">Elegimos ModernBERT-base: +10.8 pts de F1 sobre el baseline</h2>
+  </div>
+
+  <table style="width:100%;font-size:26px;color:#12202F;font-family:'DM Sans', Arial, sans-serif">
+    <tr style="background:#E4DFD2">
+      <th style="width:24%;text-align:left;font-weight:700">Modelo</th>
+      <th style="width:10%;font-weight:700">EM Total</th>
+      <th style="width:10%;font-weight:700">F1 Total</th>
+      <th style="width:18%;font-weight:700">Sin Respuesta</th>
+      <th style="width:18%;font-weight:700">Parámetros</th>
+      <th style="width:20%;font-weight:700">Latencia en CPU</th>
+    </tr>
+    <tr>
+      <td>BERT-base-uncased</td>
+      <td>67.8%</td>
+      <td>70.2%</td>
+      <td>75.0%</td>
+      <td>108.9 M</td>
+      <td>≈ 0.34 s</td>
+    </tr>
+    <tr style="background:#CFE3E1">
+      <td><b>ModernBERT-base (Ganador)</b></td>
+      <td><b>77.67%</b></td>
+      <td><b>81.04%</b></td>
+      <td><b>82.94%</b></td>
+      <td><b>149.6 M</b></td>
+      <td><b>≈ 1.3 s</b></td>
+    </tr>
+    <tr style="background:#EBE7DB">
+      <td>RoBERTa-base</td>
+      <td>74.93%</td>
+      <td>78.31%</td>
+      <td>76.79%</td>
+      <td>124.1 M</td>
+      <td>≈ 0.40 s</td>
+    </tr>
+    <tr>
+      <td>DistilBERT-base-uncased</td>
+      <td>48.50%</td>
+      <td>49.25%</td>
+      <td>84.62%*</td>
+      <td>66.4 M</td>
+      <td>≈ 0.02 s</td>
+    </tr>
+  </table>
+
+  <div style="display:flex;gap:32px">
+    <div style="flex:1;background:#FFFDF8;padding:32px;border:1px solid #D9D3C3;border-radius:16px;border-left:8px solid #0B6672">
+      <h3 style="font-size:26px;font-weight:700;color:#0B6672;margin-bottom:8px">Lo que ganamos</h3>
+      <p style="font-size:22px;line-height:1.4;color:#333">
+        Casi 11 puntos más de F1 que el baseline y 8 puntos más detectando preguntas sin respuesta (82.94% NoAns). Atención moderna con RoPE y GeGLU.
+      </p>
+    </div>
+    <div style="flex:1;background:#FFFDF8;padding:32px;border:1px solid #D9D3C3;border-radius:16px;border-left:8px solid #8A4B0F">
+      <h3 style="font-size:26px;font-weight:700;color:#8A4B0F;margin-bottom:8px">Compensación (Tradeoff) en CPU</h3>
+      <p style="font-size:22px;line-height:1.4;color:#333">
+        37% más parámetros y 1.3 s de latencia por pregunta en CPU, pero con margen holgado respecto al límite de 5.0 s por solicitud de la guía.
+      </p>
+    </div>
+  </div>
+
+  <p style="position:absolute;left:128px;bottom:48px;font-size:20px;color:#6B7280">Extractive QA as a Service · Diapositiva 2 · Evaluado sobre 11,873 preguntas oficiales con evaluate.load('squad_v2')</p>
+</section>
+</div>
+
+<!-- ==================== SLIDE 3: CRITERIO 2 — ENTRENAMIENTO & PÉRDIDA ==================== -->
+<div class="frame" id="f-3" hidden>
+<section class="slide" id="s-3" style="background:#F5F2EA;color:#12202F;padding:100px 128px 140px;display:flex;flex-direction:column;gap:32px">
+  <div>
+    <p style="font-size:22px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#0B6672;margin-bottom:8px">Criterio 2 · Entrenamiento y Curva de Pérdida</p>
+    <h2 style="font-size:52px;font-weight:700;line-height:1.1">Fine-Tuning Reproducible en SQuAD 2.0</h2>
+  </div>
+
+  <div style="display:flex;gap:40px;align-items:center">
+    <div style="width:740px;display:flex;flex-direction:column;gap:20px">
+      <table style="width:100%;font-size:23px;color:#12202F;font-family:'DM Sans', Arial, sans-serif">
+        <tr style="background:#E4DFD2"><th style="width:40%;text-align:left;font-weight:700">Decisión</th><th style="width:60%;font-weight:700">Valor de Configuración</th></tr>
+        <tr><td><b>Datos de entrenamiento</b></td><td>30,000 ejemplos (33.4% sin respuesta)</td></tr>
+        <tr style="background:#EBE7DB"><td><b>Conjunto de validación</b></td><td>11,873 preguntas oficiales SQuAD 2.0</td></tr>
+        <tr><td><b>Épocas y Learning Rate</b></td><td>2 épocas · lr 3e-5 · warmup lineal 10%</td></tr>
+        <tr style="background:#EBE7DB"><td><b>Batch efectivo</b></td><td>32 (4 per device × 8 acumulación)</td></tr>
+        <tr><td><b>Ventana y Stride</b></td><td>max_seq_length 384 · doc_stride 128</td></tr>
+        <tr style="background:#EBE7DB"><td><b>Hardware de cómputo</b></td><td>RTX 3050 Ti (4GB) · fp16 · 2.85 horas</td></tr>
+      </table>
+
+      <div style="background:#FFFDF8;padding:22px 28px;border:1px solid #D9D3C3;border-radius:14px">
+        <p style="font-size:20px;line-height:1.4;color:#4A5663">
+          <b>Evidencia de convergencia:</b> Train loss descendió a 1.21 y val loss convergió a 0.864 sin sobreajuste severo.
+        </p>
+      </div>
+    </div>
+
+    <div style="flex:1;background:#FFFDF8;padding:16px;border-radius:16px;border:1px solid #D9D3C3;box-shadow:0 8px 16px rgba(0,0,0,0.06)">
+      <img src="logs/loss.png" alt="Curva de Pérdida" style="width:100%;height:460px;object-fit:contain;border-radius:8px">
+      <p style="font-size:18px;color:#6B7280;text-align:center;margin-top:8px">logs/loss.png — Trayectoria de pérdida de entrenamiento y validación</p>
+    </div>
+  </div>
+
+  <p style="position:absolute;left:128px;bottom:48px;font-size:20px;color:#6B7280">Extractive QA as a Service · Diapositiva 3</p>
+</section>
+</div>
+
+<!-- ==================== SLIDE 4: CRITERIO 2 — UMBRAL TAU ==================== -->
+<div class="frame" id="f-4" hidden>
+<section class="slide" id="s-4" style="background:#F5F2EA;color:#12202F;padding:100px 128px 140px;display:flex;flex-direction:column;gap:32px">
+  <div>
+    <p style="font-size:22px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#0B6672;margin-bottom:8px">Criterio 2 · Calibración del Umbral</p>
+    <h2 style="font-size:52px;font-weight:700;line-height:1.1">Cuándo responder null: Búsqueda en Rejilla de &tau;</h2>
+  </div>
+
+  <div style="display:flex;gap:40px;align-items:center">
+    <div style="width:740px;display:flex;flex-direction:column;gap:20px">
+      <div style="background:#12202F;color:#F5F2EA;padding:28px;border-radius:16px">
+        <p style="font-size:20px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#F2B84B;margin-bottom:8px">Regla de Decisión</p>
+        <h3 style="font-size:24px;font-weight:700;margin-bottom:12px">Puntaje del fragmento vs Token [CLS]</h3>
+        <p style="font-family:'JetBrains Mono', Consolas, monospace;font-size:21px;line-height:1.4;background:#1E3248;padding:16px;border-radius:10px;color:#F5F2EA">
+          null si: best_span &le; min_k (s_0 + e_0) + &tau;
+        </p>
+        <p style="font-size:20px;line-height:1.35;color:#C9D3DD;margin-top:12px">
+          Donde s_0 y e_0 son los logits del token de clasificación CLS (posición 0).
+        </p>
+      </div>
+
+      <div style="background:#FFFDF8;padding:24px 28px;border:1px solid #D9D3C3;border-left:8px solid #0B6672;border-radius:14px">
+        <h3 style="font-size:22px;font-weight:700;color:#0B6672;margin-bottom:6px">Óptimo Matemático: &tau; = 0.0</h3>
+        <p style="font-size:20px;line-height:1.4;color:#333">
+          Grid search en [-5.0, +5.0]. &tau; = 0.0 maximiza el balance F1 (81.04%) y Exact Match (77.67%), evitando abstenciones falsas o alucinaciones.
+        </p>
+      </div>
+    </div>
+
+    <div style="flex:1;background:#FFFDF8;padding:16px;border-radius:16px;border:1px solid #D9D3C3;box-shadow:0 8px 16px rgba(0,0,0,0.06)">
+      <img src="logs/threshold_search.png" alt="Búsqueda de Umbral" style="width:100%;height:460px;object-fit:contain;border-radius:8px">
+      <p style="font-size:18px;color:#6B7280;text-align:center;margin-top:8px">logs/threshold_search.png — Curvas de F1 y EM según el umbral &tau;</p>
+    </div>
+  </div>
+
+  <p style="position:absolute;left:128px;bottom:48px;font-size:20px;color:#6B7280">Extractive QA as a Service · Diapositiva 4</p>
+</section>
+</div>
+
+<!-- ==================== SLIDE 5: CRITERIO 3 — ARQUITECTURA DE SERVICIO ==================== -->
+<div class="frame" id="f-5" hidden>
+<section class="slide" id="s-5" style="background:#12202F;color:#F5F2EA;padding:100px 128px 140px;display:flex;flex-direction:column;gap:36px">
+  <div>
+    <p style="font-size:22px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#F2B84B;margin-bottom:8px">Criterio 3 · Arquitectura de Servicio y Flujo</p>
+    <h2 style="font-size:52px;font-weight:700;line-height:1.1">FastAPI en CPU: Asíncrono, Seguro y por Túnel</h2>
+  </div>
+
+  <!-- DIAGRAMA DE FLUJO -->
+  <div style="display:flex;align-items:center;gap:16px">
+    <div style="flex:1;min-height:210px;background:#1E3248;padding:24px 20px;border-radius:14px;border:1px solid #31475F">
+      <h3 style="font-size:24px;font-weight:700;color:#F2B84B;margin-bottom:8px">1. Cliente / Test</h3>
+      <p style="font-size:20px;line-height:1.35;color:#C9D3DD">Harness del evaluador llama a la URL pública.</p>
+    </div>
+    <svg width="40" height="24" viewBox="0 0 40 24" style="flex:none"><polygon points="0,6 24,6 24,0 40,12 24,24 24,18 0,18" fill="#F2B84B"/></svg>
+
+    <div style="flex:1;min-height:210px;background:#1E3248;padding:24px 20px;border-radius:14px;border:1px solid #31475F">
+      <h3 style="font-size:24px;font-weight:700;color:#F2B84B;margin-bottom:8px">2. Túnel Cloudflare</h3>
+      <p style="font-size:20px;line-height:1.35;color:#C9D3DD">Exposición HTTPS pública hacia localhost:8000.</p>
+    </div>
+    <svg width="40" height="24" viewBox="0 0 40 24" style="flex:none"><polygon points="0,6 24,6 24,0 40,12 24,24 24,18 0,18" fill="#F2B84B"/></svg>
+
+    <div style="flex:1;min-height:210px;background:#1E3248;padding:24px 20px;border-radius:14px;border:1px solid #31475F">
+      <h3 style="font-size:24px;font-weight:700;color:#F2B84B;margin-bottom:8px">3. Token Auth</h3>
+      <p style="font-size:20px;line-height:1.35;color:#C9D3DD">Valida Bearer contra variable QA_API_TOKEN.</p>
+    </div>
+    <svg width="40" height="24" viewBox="0 0 40 24" style="flex:none"><polygon points="0,6 24,6 24,0 40,12 24,24 24,18 0,18" fill="#F2B84B"/></svg>
+
+    <div style="flex:1;min-height:210px;background:#1E3248;padding:24px 20px;border-radius:14px;border:1px solid #31475F">
+      <h3 style="font-size:24px;font-weight:700;color:#F2B84B;margin-bottom:8px">4. Ventanas</h3>
+      <p style="font-size:20px;line-height:1.35;color:#C9D3DD">Ventanas 384 tokens con solapamiento de 128.</p>
+    </div>
+    <svg width="40" height="24" viewBox="0 0 40 24" style="flex:none"><polygon points="0,6 24,6 24,0 40,12 24,24 24,18 0,18" fill="#F2B84B"/></svg>
+
+    <div style="flex:1;min-height:210px;background:#1E3248;padding:24px 20px;border-radius:14px;border:1px solid #31475F">
+      <h3 style="font-size:24px;font-weight:700;color:#F2B84B;margin-bottom:8px">5. ModernBERT</h3>
+      <p style="font-size:20px;line-height:1.35;color:#C9D3DD">Inferencia en CPU, extracción de fragmento o null.</p>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:32px">
+    <div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#1E3248;padding:32px;border-radius:16px">
+      <h3 style="font-size:26px;font-weight:700;color:#F2B84B">Carga Asíncrona (Lifespan)</h3>
+      <p style="font-size:22px;line-height:1.35;color:#C9D3DD">
+        Se carga en memoria una sola vez al inicio en CPU. Mientras carga, <code style="font-family:'JetBrains Mono';color:#F2B84B">/health</code> responde 503 «loading»; al terminar, 200 «ok».
+      </p>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#1E3248;padding:32px;border-radius:16px">
+      <h3 style="font-size:26px;font-weight:700;color:#F2B84B">Control de Acceso Seguro</h3>
+      <p style="font-size:22px;line-height:1.35;color:#C9D3DD">
+        El token nunca se escribe en git. Se valida contra la variable de entorno <code style="font-family:'JetBrains Mono';color:#F2B84B">QA_API_TOKEN</code>. Sin token o incorrecto: 401. Solo /health es público.
+      </p>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#1E3248;padding:32px;border-radius:16px">
+      <h3 style="font-size:26px;font-weight:700;color:#F2B84B">Garantía Matemática de Offset</h3>
+      <p style="font-size:22px;line-height:1.35;color:#C9D3DD">
+        El tokenizador garantiza <code style="font-family:'JetBrains Mono';color:#F2B84B">context[start : start + len(answer)] == answer</code>. Si no hay respuesta, devuelve <code style="font-family:'JetBrains Mono';color:#F2B84B">null</code>.
+      </p>
+    </div>
+  </div>
+
+  <p style="position:absolute;left:128px;bottom:48px;font-size:20px;color:#8B98A5">Extractive QA as a Service · Diapositiva 5</p>
+</section>
+</div>
+
+<!-- ==================== SLIDE 6: CRITERIO 4 — INVESTIGACIÓN DE DECODERS ==================== -->
+<div class="frame" id="f-6" hidden>
+<section class="slide" id="s-6" style="background:#F5F2EA;color:#12202F;padding:100px 128px 140px;display:flex;flex-direction:column;gap:36px">
+  <div>
+    <p style="font-size:22px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#0B6672;margin-bottom:8px">Criterio 4 · Investigación de Decoders (Sección XIII)</p>
+    <h2 style="font-size:52px;font-weight:700;line-height:1.1">Con un Decoder: Más Flexibilidad pero Mayor Latencia</h2>
+  </div>
+
+  <table style="width:100%;font-size:26px;color:#12202F;font-family:'DM Sans', Arial, sans-serif">
+    <tr style="background:#E4DFD2">
+      <th style="width:34%;text-align:left;font-weight:700">Problema o Límite Encontrado</th>
+      <th style="width:33%;text-align:left;font-weight:700">Cómo lo Resolvería un Decoder</th>
+      <th style="width:33%;text-align:left;font-weight:700">Costo o Desventaja en Producción</th>
+    </tr>
+    <tr>
+      <td><b>Contextos largos:</b> 3 ventanas deslizantes tardan 3.6 s con 3,200 letras.</td>
+      <td>Lee todo el contexto de una sola vez sin dividir en trozos.</td>
+      <td>Mayor consumo de RAM y latencia en CPU; pone en riesgo el límite de 5 s.</td>
+    </tr>
+    <tr style="background:#EBE7DB">
+      <td><b>«Sin respuesta»:</b> Depende de calibrar un umbral numérico &tau;.</td>
+      <td>Puede razonar y redactar que el texto no contiene el dato.</td>
+      <td>Respuesta libre: no calza con Exact Match y requiere evaluación con juez.</td>
+    </tr>
+    <tr>
+      <td><b>Respuestas no literales:</b> Preguntas de Sí/No o síntesis abstractiva.</td>
+      <td>Genera la respuesta libremente aunque no esté literal en el texto.</td>
+      <td>Modelo mucho más pesado; abre la puerta al riesgo de alucinación.</td>
+    </tr>
+  </table>
+
+  <div style="background:#FFFDF8;padding:28px 36px;border:1px solid #D9D3C3;border-left:8px solid #0B6672;border-radius:14px">
+    <p style="font-size:24px;line-height:1.35;color:#12202F">
+      <b>Conclusión de Ingeniería:</b> Para respuestas literales y servicio exclusivo en CPU con límite estricto de 5 s, un <strong>Encoder (ModernBERT)</strong> es la solución más rápida, determinista y fácil de evaluar.
+    </p>
+  </div>
+
+  <p style="position:absolute;left:128px;bottom:48px;font-size:20px;color:#6B7280">Extractive QA as a Service · Diapositiva 6</p>
+</section>
+</div>
+
+<!-- ==================== SLIDE 7: EVIDENCIA EN VIVO & CIERRE ==================== -->
+<div class="frame" id="f-7" hidden>
+<section class="slide" id="s-7" style="background:#0B6672;color:#F5F2EA;padding:100px 128px 140px;display:flex;flex-direction:column;justify-content:space-between">
+  <div>
+    <p style="font-size:22px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#F2B84B;margin-bottom:8px">Validación en Vivo (Sección XI) & Cierre</p>
+    <h2 style="font-size:52px;font-weight:700;line-height:1.1">El Servicio Funciona de Punta a Punta</h2>
+  </div>
+
+  <div style="display:flex;gap:40px">
+    <table style="width:960px;font-size:26px;color:#F5F2EA;font-family:'DM Sans', Arial, sans-serif">
+      <tr style="background:#08454E"><th style="width:64%;text-align:left;font-weight:700">Prueba del Dry Run (Túnel Cloudflare)</th><th style="width:36%;text-align:left;font-weight:700">Resultado Oficial</th></tr>
+      <tr style="background:#0A5560"><td>GET /health, sin token</td><td>200 · {'status': 'ok'}</td></tr>
+      <tr><td>GET /info, sin token</td><td>401 · Unauthorized</td></tr>
+      <tr style="background:#0A5560"><td>GET /info, token incorrecto</td><td>401 · Unauthorized</td></tr>
+      <tr><td>GET /info, token válido</td><td>200 · team-03, 149.6M</td></tr>
+    </table>
+
+    <div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#08454E;padding:32px;border-radius:16px">
+      <p style="font-size:22px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#F2B84B">Prueba Real · POST /predict</p>
+      <p style="font-family:'JetBrains Mono', Consolas, monospace;font-size:22px;line-height:1.4">question: How long is the Lempa River?</p>
+      <p style="font-family:'JetBrains Mono', Consolas, monospace;font-size:22px;line-height:1.4;color:#F2B84B">answer: 422 km</p>
+      <p style="font-family:'JetBrains Mono', Consolas, monospace;font-size:22px;line-height:1.4">start: 67 · score: 0.9887</p>
+      <p style="font-size:18px;color:#C9D3DD;margin-top:8px">Pregunta trampa: <code>answer: null, start: null</code> (score 0.999)</p>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:flex-end">
+    <p style="font-size:68px;font-weight:700;line-height:1;color:#F2B84B">¡Gracias! · ¿Preguntas?</p>
+    <p style="font-size:22px;color:#C9D3DD">team-03 · Celeste · Fabiola · Eduardo · Arlette Catalán</p>
+  </div>
+</section>
+</div>
+
+</div>
+
+<!-- NOTAS DEL ORADOR FLOTANTES (TECLA N) -->
+<div id="notes" role="region" aria-label="Notas del orador"></div>
+
+<!-- BARRA INFERIOR DE CONTROL -->
+<div class="bar">
+  <button id="prev" aria-label="Diapositiva anterior">◀</button>
+  <span id="count">1 / 7</span>
+  <button id="next" aria-label="Diapositiva siguiente">▶</button>
+  <button id="tn">Notas (N)</button>
+  <button id="tf">Pantalla completa (F)</button>
+  <span class="hint">Flechas ← → o Espacio para avanzar · N para guion de 3 min · Ctrl+P para PDF</span>
+</div>
+
+<script>
+(function(){
+  var notes = [
+    "HABLA: Fabi (Diapositiva 1 · Portada — 15 segundos).<br><br><b>Guion:</b> Hola a todos, somos Celeste, Eduardo, Arlette y yo, conformamos el team-03. Construimos Extractive QA as a Service: un microservicio de producción impulsado por ModernBERT-base afinado en SQuAD 2.0 que responde con el fragmento exacto del texto, o se abstiene diciendo 'no sé' cuando la pregunta no se puede contestar.",
+    "HABLA: Fabi (Diapositiva 2 · Criterio 1: Modelo y Tradeoff — 35 segundos).<br><br><b>Guion:</b> Evaluamos cuatro encoders: BERT-base, DistilBERT, RoBERTa y ModernBERT. Elegimos ModernBERT-base porque en las 11,873 preguntas oficiales de validación logra 77.67% de Exact Match y 81.04% de F1: casi 11 puntos más que el baseline de 70%, y acierta 83 de cada 100 preguntas sin respuesta. El tradeoff específico para CPU es que tiene 149 millones de parámetros y tarda 1.3 segundos en inferencia, pero está muy por debajo del límite de 5 segundos de la guía.",
+    "HABLA: Celeste (Diapositiva 3 · Criterio 2: Entrenamiento y Pérdida — 30 segundos).<br><br><b>Guion:</b> Afinamos el checkpoint base de ModernBERT con un subconjunto estratificado de 30 mil ejemplos de SQuAD 2.0, conservando el 33% de preguntas sin respuesta. Usamos 2 épocas, learning rate de 3e-5 con 10% de warmup, y un batch efectivo de 32 combinando acumulación de gradiente. Entrenamos en una GPU RTX 3050 Ti con fp16 en 2.85 horas. Como ven en la gráfica de logs/loss.png, la pérdida de validación convergió limpiamente a 0.86 sin sobreajuste.",
+    "HABLA: Celeste (Diapositiva 4 · Criterio 2: Umbral de Sin Respuesta — 30 segundos).<br><br><b>Guion:</b> La decisión clave para detectar preguntas sin respuesta es comparar el puntaje del mejor fragmento contra los logits del token CLS más un umbral tau. Realizamos un grid search en validación entre -5.0 y +5.0 como muestra logs/threshold_search.png. El óptimo matemático fue tau = 0.0, que maximiza el F1 global en 81.04%. Si tau fuera mayor a 2.5 rechazaría respuestas válidas, y si fuera menor a -2.5 alucinaría.",
+    "HABLA: Arlette (Diapositiva 5 · Criterio 3: Arquitectura de Servicio — 40 segundos).<br><br><b>Guion:</b> Servimos la API con FastAPI y Uvicorn en el puerto 8000 sobre CPU, y la exponemos con un túnel público de Cloudflare. El modelo se carga en memoria una sola vez al arrancar mediante el gestor lifespan; hasta entonces /health devuelve 503 loading. El control de acceso valida el token Bearer contra la variable de entorno QA_API_TOKEN, devolviendo 401 si falta o es incorrecto. Para textos largos usamos ventanas deslizantes de 384 tokens con 128 de solape, garantizando la regla matemática de offset.",
+    "HABLA: Eduardo (Diapositiva 6 · Criterio 4: Investigación de Decoders — 30 segundos).<br><br><b>Guion:</b> La guía pide analizar cómo un decoder resolvería tres problemas reales que encontramos. Primero, contextos largos: nuestro modelo tarda 3.6 s en 3 ventanas; un decoder leería todo de una vez, pero en CPU dispararía la RAM y la latencia arriesgando el límite de 5 s. Segundo, preguntas sin respuesta: nosotros usamos tau calibrado; un decoder puede redactar una explicación, pero no calza con Exact Match. Tercero, preguntas de Sí o No: un decoder las responde, pero con riesgo de inventar. Para respuestas literales en CPU, el Encoder es superior.",
+    "HABLA: Eduardo (Diapositiva 7 · Evidencia Dry Run y Cierre — 20 segundos).<br><br><b>Guion:</b> En el dry run probamos todo de punta a punta por el túnel público: /health respondió 200, /info sin token dio 401, y con token dio 200 con team-03. En /predict, una pregunta real sobre el Río Lempa extrajo '422 km' en la posición 67 con 98.8% de certeza, y una pregunta trampa devolvió null. El repositorio está etiquetado con submission. Muchas gracias, quedamos atentos a sus preguntas."
+  ];
+
+  var frames = Array.prototype.slice.call(document.querySelectorAll('.frame'));
+  var stage = document.getElementById('stage');
+  var cur = 0;
+
+  function barH(){ return document.fullscreenElement ? 0 : 48; }
+
+  function fit(){
+    var s = Math.min(window.innerWidth / 1920, (window.innerHeight - barH()) / 1080);
+    stage.style.transform = 'scale(' + s + ')';
+    stage.style.left = ((window.innerWidth - 1920 * s) / 2) + 'px';
+    stage.style.top = (((window.innerHeight - barH()) - 1080 * s) / 2) + 'px';
+  }
+
+  function show(i){
+    cur = Math.max(0, Math.min(frames.length - 1, i));
+    frames.forEach(function(f, k){ f.hidden = (k !== cur); });
+    document.getElementById('count').textContent = (cur + 1) + ' / ' + frames.length;
+    document.getElementById('notes').innerHTML = notes[cur] || 'Sin notas.';
+    try { history.replaceState(null, '', '#' + (cur + 1)); } catch(e) {}
+  }
+
+  function toggleNotes(){ document.getElementById('notes').classList.toggle('on'); }
+
+  function toggleFs(){
+    if (document.fullscreenElement) { document.exitFullscreen(); }
+    else if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen(); }
+  }
+
+  document.getElementById('prev').onclick = function(){ show(cur - 1); };
+  document.getElementById('next').onclick = function(){ show(cur + 1); };
+  document.getElementById('tn').onclick = toggleNotes;
+  document.getElementById('tf').onclick = toggleFs;
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(cur + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(cur - 1); }
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(frames.length - 1);
+    else if (e.key === 'n' || e.key === 'N') toggleNotes();
+    else if (e.key === 'f' || e.key === 'F') toggleFs();
+  });
+
+  window.addEventListener('resize', fit);
+  document.addEventListener('fullscreenchange', fit);
+
+  var start = parseInt((location.hash || '').replace('#',''), 10);
+  show(isNaN(start) ? 0 : start - 1);
+  fit();
+})();
+</script>
+</body>
+</html>

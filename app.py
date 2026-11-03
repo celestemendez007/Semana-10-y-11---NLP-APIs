@@ -187,13 +187,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 security = HTTPBearer(auto_error=False)
 
 def verify_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
-    """Valida el Bearer token contra QA_API_TOKEN."""
-    if not QA_API_TOKEN:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"error": "internal_error", "detail": "QA_API_TOKEN not set"},
-        )
-    if credentials is None or credentials.credentials != QA_API_TOKEN:
+    """Valida el Bearer token contra QA_API_TOKEN.
+    Cualquier intento sin token, con token incorrecto, o si el servidor no tiene token configurado,
+    responde estrictamente 401 Unauthorized segun el contrato OpenAPI."""
+    expected_token = os.getenv("QA_API_TOKEN", QA_API_TOKEN)
+    if not expected_token or credentials is None or credentials.credentials != expected_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             headers={"WWW-Authenticate": "Bearer"},
